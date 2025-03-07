@@ -99,9 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return false;
     }
     
-    if (isNaN(width) || width < 16 || width > 512 ||
-        isNaN(height) || height < 16 || height > 512) {
-      showError("Cell dimensions must be between 16 and 512 pixels.");
+    if (isNaN(width) || width < 16 || 
+        isNaN(height) || height < 16) {
+      showError("Cell dimensions must be at least 16 pixels.");
       return false;
     }
     
@@ -792,82 +792,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update the prompt grid to show the new content
     createPromptGrid();
   }
-
-  // Define preset content for the grid
-  const contentPresets = {
-    characters: [
-      "doctor", "nurse", "firefighter", "police officer",
-      "teacher", "student", "chef", "farmer",
-      "astronaut", "scientist", "artist", "musician",
-      "wizard", "knight", "ninja", "pirate"
-    ],
-    fantasy: [
-      "dragon", "unicorn", "phoenix", "griffin",
-      "werewolf", "vampire", "ghost", "zombie",
-      "fairy", "elf", "dwarf", "orc",
-      "mermaid", "centaur", "minotaur", "chimera"
-    ],
-    furniture: [
-      "sofa", "chair", "table", "bed",
-      "desk", "bookshelf", "cabinet", "dresser",
-      "lamp", "mirror", "clock", "rug",
-      "curtain", "pillow", "ottoman", "nightstand"
-    ],
-    buildings: [
-      "house", "apartment", "skyscraper", "cathedral",
-      "castle", "temple", "pyramid", "lighthouse",
-      "cabin", "barn", "windmill", "factory",
-      "school", "hospital", "library", "museum"
-    ],
-    vehicles: [
-      "car", "truck", "motorcycle", "bicycle",
-      "boat", "ship", "submarine", "airplane",
-      "helicopter", "rocket", "spaceship", "train",
-      "bus", "taxi", "tractor", "tank"
-    ],
-    animals: [
-      "dog", "cat", "horse", "cow",
-      "elephant", "lion", "tiger", "bear",
-      "monkey", "giraffe", "zebra", "kangaroo",
-      "penguin", "owl", "eagle", "shark"
-    ]
-  };
-
-  // Define style presets
-  const stylePresets = {
-    pixelArt: {
-      prefix: "pixel art",
-      suffix: "16-bit style, game sprite"
-    },
-    lineart: {
-      prefix: "minimalist line art, thin black outlines",
-      suffix: "white background, clean design"
-    },
-    papercraft: {
-      prefix: "papercraft, paper cutout",
-      suffix: "beveled 2.5D paper art, soft shadows"
-    },
-    voxel: {
-      prefix: "voxel 3D model",
-      suffix: "isometric view, minecraft style"
-    },
-    neonPastel: {
-      prefix: "vivid neon-pastel colors",
-      suffix: "pop art style, bright background"
-    },
-    watercolor: {
-      prefix: "delicate watercolor painting",
-      suffix: "wet on wet technique, soft colors, painterly"
-    },
-    retro3D: {
-      prefix: "retro 3D render",
-      suffix: "PS1 era low-poly style, texture mapped"
-    },
-    cute: {
-      prefix: "adorable, 3D render, cute whimsical character",
-      suffix: "chibi style, round features, big eyes"
-    }
-  };
 
   // Clean up function for when images are no longer needed
   function cleanupImageURLs() {
