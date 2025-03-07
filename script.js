@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateAllBtn = document.getElementById('generateAll');
   const resetAllBtn = document.getElementById('resetAll');
   const downloadBtn = document.getElementById('downloadSpritesheet');
-  const updatePreviewBtn = document.getElementById('updatePreview');
   const spritesheetPreview = document.getElementById('spritesheetPreview');
   const confirmationModal = document.getElementById('confirmationModal');
   const confirmationTitle = document.getElementById('confirmationTitle');
@@ -22,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const progressModal = document.getElementById('progressModal');
   const progressMessage = document.getElementById('progressMessage');
   const progressBar = document.getElementById('progressBar');
+  const updatePreviewBtn = document.getElementById('updatePreview');
 
   // State
   let currentState = {
@@ -42,9 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
   generateAllBtn.addEventListener('click', handleGenerateAll);
   resetAllBtn.addEventListener('click', handleResetAll);
   downloadBtn.addEventListener('click', handleDownload);
-  updatePreviewBtn.addEventListener('click', handleUpdateSpritesheetPreview);
   confirmYesBtn.addEventListener('click', handleConfirmation);
   confirmNoBtn.addEventListener('click', () => hideModal(confirmationModal));
+  updatePreviewBtn.addEventListener('click', updateSpritesheetPreview);
 
   // Theme toggle
   const themeToggleBtn = document.getElementById('themeToggle');
@@ -77,6 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create the grids
     createPromptGrid();
     createImageGrid();
+    
+    // Update spritesheet preview
+    updateSpritesheetPreview();
     
     // Initialize theme
     initTheme();
@@ -316,11 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // New handler for updating the spritesheet preview
-  function handleUpdateSpritesheetPreview() {
-    updateSpritesheetPreview();
-  }
-
   // Validation functions
   function validatePrompts(cellIndex = null) {
     const prefix = prefixPromptInput.value.trim();
@@ -352,6 +350,70 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Image generation functions
+  async function generateImage(prompt) {
+    try {
+      // Use the websim.imageGen function from the integration
+      return await websim.imageGen({
+        prompt: prompt,
+        width: currentState.cellWidth,
+        height: currentState.cellHeight
+      });
+    } catch (error) {
+      console.error('Image generation API error:', error);
+      throw new Error('Failed to generate image. Please try again later.');
+    }
+  }
+
+  function updateUIForGeneration(isGenerating) {
+    generateAllBtn.disabled = isGenerating;
+    updateGridBtn.disabled = isGenerating;
+    resetAllBtn.disabled = isGenerating;
+    updatePreviewBtn.disabled = isGenerating;
+    
+    // Disable/enable all "Generate This Cell" buttons
+    const cellButtons = promptGridElement.querySelectorAll('.cell-button');
+    cellButtons.forEach(button => {
+      button.disabled = isGenerating;
+    });
+  }
+
+  async function generateCell(cellIndex, updateUI = true) {
+    const cell = currentState.cells[cellIndex];
+    const prefix = prefixPromptInput.value.trim();
+    const suffix = suffixPromptInput.value.trim();
+    const prompt = `${prefix} ${cell.prompt.trim()} ${suffix}`.trim();
+    
+    // Update cell state
+    cell.isGenerating = true;
+    cell.error = null;
+    
+    if (updateUI) {
+      createImageGrid(); // Refresh the UI to show loading state
+    }
+    
+    try {
+      const result = await generateImage(prompt);
+      
+      // Update cell state with the generated image
+      cell.imageUrl = result.url;
+      cell.isGenerating = false;
+      
+      if (updateUI) {
+        createImageGrid();
+      }
+    } catch (error) {
+      console.error('Image generation error:', error);
+      cell.error = "Failed to generate image";
+      cell.isGenerating = false;
+      
+      if (updateUI) {
+        createImageGrid();
+      }
+      
+      throw error; // Re-throw to handle in the calling function
+    }
+  }
+
   async function generateAllCells() {
     currentState.isGenerating = true;
     updateUIForGeneration(true);
@@ -384,7 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Update the UI after all generations are complete
     createImageGrid();
-    updateSpritesheetPreview();
     
     if (hasErrors) {
       showError("Some images failed to generate. You can retry individual cells.");
@@ -392,75 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // Enable download button
       downloadBtn.disabled = false;
     }
-  }
-
-  async function generateCell(cellIndex, updateUI = true) {
-    const cell = currentState.cells[cellIndex];
-    const prefix = prefixPromptInput.value.trim();
-    const suffix = suffixPromptInput.value.trim();
-    const prompt = `${prefix} ${cell.prompt.trim()} ${suffix}`.trim();
-    
-    // Update cell state
-    cell.isGenerating = true;
-    cell.error = null;
-    
-    if (updateUI) {
-      createImageGrid(); // Refresh the UI to show loading state
-    }
-    
-    try {
-      const result = await generateImage(prompt);
-      
-      // Update cell state with the generated image
-      cell.imageUrl = result.url;
-      cell.isGenerating = false;
-      
-      if (updateUI) {
-        createImageGrid();
-        updateSpritesheetPreview();
-        
-        // Check if all cells have images and enable download if they do
-        if (canDownloadSpritesheet()) {
-          downloadBtn.disabled = false;
-        }
-      }
-    } catch (error) {
-      console.error('Image generation error:', error);
-      cell.error = "Failed to generate image";
-      cell.isGenerating = false;
-      
-      if (updateUI) {
-        createImageGrid();
-      }
-      
-      throw error; // Re-throw to handle in the calling function
-    }
-  }
-
-  async function generateImage(prompt) {
-    try {
-      // Use the websim.imageGen function from the integration
-      return await websim.imageGen({
-        prompt: prompt,
-        width: currentState.cellWidth,
-        height: currentState.cellHeight
-      });
-    } catch (error) {
-      console.error('Image generation API error:', error);
-      throw new Error('Failed to generate image. Please try again later.');
-    }
-  }
-
-  function updateUIForGeneration(isGenerating) {
-    generateAllBtn.disabled = isGenerating;
-    updateGridBtn.disabled = isGenerating;
-    resetAllBtn.disabled = isGenerating;
-    
-    // Disable/enable all "Generate This Cell" buttons
-    const cellButtons = promptGridElement.querySelectorAll('.cell-button');
-    cellButtons.forEach(button => {
-      button.disabled = isGenerating;
-    });
   }
 
   function updateProgress(completed, total) {
@@ -503,7 +495,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function drawSpritesheetOnCanvas(canvas, ctx) {
     let loadedImages = 0;
     const totalCells = currentState.cells.length;
-    const totalImageCells = currentState.cells.filter(c => c.imageUrl).length;
     const images = [];
     
     // Initialize the image array
@@ -511,54 +502,53 @@ document.addEventListener('DOMContentLoaded', () => {
       images[i] = null;
     }
     
-    if (totalImageCells === 0) {
-      return; // No images to load
-    }
-    
     // Load all images
     currentState.cells.forEach((cell, index) => {
       if (cell.imageUrl) {
-        // Use a data URL approach instead of direct loading to bypass CORS
-        createImageBitmap(cell, index, images, () => {
+        const img = new Image();
+        
+        // Create a data URL from the cell image to avoid CORS issues
+        // This uses the HTML canvas element that's already displaying the image in the grid
+        try {
+          const imageCell = document.querySelector(`.image-cell[data-row="${cell.row}"][data-col="${cell.col}"] img`);
+          if (imageCell) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = currentState.cellWidth;
+            tempCanvas.height = currentState.cellHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(imageCell, 0, 0, currentState.cellWidth, currentState.cellHeight);
+            img.src = tempCanvas.toDataURL('image/png');
+          } else {
+            img.crossOrigin = 'anonymous';
+            img.src = cell.imageUrl;
+          }
+        } catch (e) {
+          console.warn('Failed to create local image copy, attempting direct load', e);
+          img.crossOrigin = 'anonymous';
+          img.src = cell.imageUrl;
+        }
+        
+        img.onload = () => {
+          images[index] = img;
           loadedImages++;
           
           // Once all images are loaded, draw them on the canvas
-          if (loadedImages === totalImageCells) {
+          if (loadedImages === currentState.cells.filter(c => c.imageUrl).length) {
             drawImagesOnCanvas(ctx, images);
           }
-        });
+        };
+        
+        img.onerror = () => {
+          console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
+          loadedImages++;
+          
+          // Continue even if some images fail to load
+          if (loadedImages === currentState.cells.filter(c => c.imageUrl).length) {
+            drawImagesOnCanvas(ctx, images);
+          }
+        };
       }
     });
-  }
-  
-  // Helper function to create an ImageBitmap from an image URL via Canvas
-  function createImageBitmap(cell, index, imagesArray, onComplete) {
-    // Create a temporary img element
-    const tempImg = document.createElement('img');
-    
-    // Set up event handlers before setting src
-    tempImg.onload = function() {
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = currentState.cellWidth;
-      tempCanvas.height = currentState.cellHeight;
-      const tempCtx = tempCanvas.getContext('2d');
-      
-      // Draw the image on the temporary canvas
-      tempCtx.drawImage(tempImg, 0, 0, currentState.cellWidth, currentState.cellHeight);
-      
-      // Create an ImageBitmap from the canvas
-      imagesArray[index] = tempCanvas;
-      onComplete();
-    };
-    
-    tempImg.onerror = function() {
-      console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
-      onComplete(); // Call onComplete even on error to continue processing
-    };
-    
-    // Use the same URL but avoid CORS by using the img element directly
-    tempImg.crossOrigin = 'anonymous';
-    tempImg.src = cell.imageUrl;
   }
 
   function drawImagesOnCanvas(ctx, images) {
@@ -569,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (images[index]) {
         const x = cell.col * currentState.cellWidth;
         const y = cell.row * currentState.cellHeight;
-        ctx.drawImage(images[index], x, y);
+        ctx.drawImage(images[index], x, y, currentState.cellWidth, currentState.cellHeight);
       }
     });
   }
@@ -584,13 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load all images and draw them on the canvas
     let loadedImages = 0;
     const totalImages = currentState.cells.length;
-    const totalImageCells = currentState.cells.filter(c => c.imageUrl).length;
     const images = Array(totalImages).fill(null);
-    
-    if (totalImageCells === 0) {
-      showError("No images to download. Please generate images first.");
-      return;
-    }
     
     currentState.cells.forEach((cell, index) => {
       if (!cell.imageUrl) {
@@ -598,8 +582,30 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       
-      // Use the same approach as in the preview
-      createImageBitmap(cell, index, images, () => {
+      const img = new Image();
+      
+      // Use the same CORS workaround as in drawSpritesheetOnCanvas
+      try {
+        const imageCell = document.querySelector(`.image-cell[data-row="${cell.row}"][data-col="${cell.col}"] img`);
+        if (imageCell) {
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = currentState.cellWidth;
+          tempCanvas.height = currentState.cellHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+          tempCtx.drawImage(imageCell, 0, 0, currentState.cellWidth, currentState.cellHeight);
+          img.src = tempCanvas.toDataURL('image/png');
+        } else {
+          img.crossOrigin = 'anonymous';
+          img.src = cell.imageUrl;
+        }
+      } catch (e) {
+        console.warn('Failed to create local image copy, attempting direct load', e);
+        img.crossOrigin = 'anonymous';
+        img.src = cell.imageUrl;
+      }
+      
+      img.onload = () => {
+        images[index] = img;
         loadedImages++;
         
         if (loadedImages === totalImages) {
@@ -608,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (images[idx]) {
               const x = cell.col * currentState.cellWidth;
               const y = cell.row * currentState.cellHeight;
-              ctx.drawImage(images[idx], x, y);
+              ctx.drawImage(images[idx], x, y, currentState.cellWidth, currentState.cellHeight);
             }
           });
           
@@ -625,7 +631,16 @@ document.addEventListener('DOMContentLoaded', () => {
           downloadLink.click();
           document.body.removeChild(downloadLink);
         }
-      });
+      };
+      
+      img.onerror = () => {
+        console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
+        loadedImages++;
+        
+        if (loadedImages === totalImages) {
+          showError("Some images could not be loaded for the download. Please try regenerating them.");
+        }
+      };
     });
   }
 

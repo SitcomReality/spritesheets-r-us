@@ -275,12 +275,6 @@ button:active {
   100% { transform: rotate(360deg); }
 }
 
-.spritesheet-controls {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
 #spritesheetPreview {
   min-height: 300px;
   border: 1px dashed var(--border-color);
@@ -296,8 +290,6 @@ button:active {
 #spritesheetPreview canvas {
   box-shadow: var(--shadow);
   background-color: rgba(255, 255, 255, 0.1); /* Subtle background for canvas in dark mode */
-  max-width: 100%;
-  height: auto;
 }
 
 .empty-message {
