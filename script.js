@@ -29,7 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
     cellWidth: 64,
     cellHeight: 64,
     cells: [], // Will contain prompt text and image data for each cell
-    isGenerating: false
+    isGenerating: false,
+    darkMode: false
   };
 
   // Initialize the grids
@@ -42,6 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
   downloadBtn.addEventListener('click', handleDownload);
   confirmYesBtn.addEventListener('click', handleConfirmation);
   confirmNoBtn.addEventListener('click', () => hideModal(confirmationModal));
+
+  // Theme toggle
+  const themeToggleBtn = document.getElementById('themeToggle');
+  themeToggleBtn.addEventListener('click', toggleTheme);
 
   // Functions to create and manage the grids
   function createGrids() {
@@ -73,6 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Update spritesheet preview
     updateSpritesheetPreview();
+    
+    // Initialize theme
+    initTheme();
   }
 
   function validateGridInputs(rows, columns, width, height) {
@@ -156,6 +164,11 @@ document.addEventListener('DOMContentLoaded', () => {
     imageGridElement.innerHTML = '';
     imageGridElement.style.gridTemplateColumns = `repeat(${currentState.columns}, 1fr)`;
     
+    // Calculate cell size based on available space and grid dimensions
+    const containerWidth = imageGridElement.clientWidth || 600;
+    const maxCellSize = Math.floor(containerWidth / currentState.columns) - 20; // Subtract for gap
+    const cellSize = Math.min(maxCellSize, 200); // Cap at 200px max
+    
     for (let row = 0; row < currentState.rows; row++) {
       for (let col = 0; col < currentState.columns; col++) {
         const cellIndex = row * currentState.columns + col;
@@ -166,8 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
         cellElement.dataset.row = row;
         cellElement.dataset.col = col;
         cellElement.dataset.index = cellIndex;
-        cellElement.style.width = `${currentState.cellWidth}px`;
-        cellElement.style.height = `${currentState.cellHeight}px`;
+        cellElement.style.width = `${cellSize}px`;
+        cellElement.style.height = `${cellSize}px`;
         
         if (cell.isGenerating) {
           const loadingDiv = document.createElement('div');
@@ -365,6 +378,10 @@ document.addEventListener('DOMContentLoaded', () => {
     hideModal(progressModal);
     updateUIForGeneration(false);
     
+    // Update the UI after all generations are complete
+    createImageGrid();
+    updateSpritesheetPreview();
+    
     if (hasErrors) {
       showError("Some images failed to generate. You can retry individual cells.");
     } else {
@@ -468,6 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.createElement('canvas');
     canvas.width = currentState.columns * currentState.cellWidth;
     canvas.height = currentState.rows * currentState.cellHeight;
+    canvas.style.maxWidth = '100%';  // Make preview responsive
+    canvas.style.height = 'auto';    // Maintain aspect ratio
     const ctx = canvas.getContext('2d');
     
     // Add the canvas to the preview
@@ -629,5 +648,30 @@ document.addEventListener('DOMContentLoaded', () => {
   function hideModal(modal) {
     modal.style.display = 'none';
   }
-});
 
+  // Theme functions
+  function initTheme() {
+    // Check for saved preference or system preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.body.classList.add('dark-mode');
+      currentState.darkMode = true;
+      document.getElementById('themeToggle').textContent = '☀️';
+    } else {
+      document.getElementById('themeToggle').textContent = '🌙';
+    }
+  }
+
+  function toggleTheme() {
+    currentState.darkMode = !currentState.darkMode;
+    document.body.classList.toggle('dark-mode');
+    
+    if (currentState.darkMode) {
+      localStorage.setItem('theme', 'dark');
+      document.getElementById('themeToggle').textContent = '☀️';
+    } else {
+      localStorage.setItem('theme', 'light');
+      document.getElementById('themeToggle').textContent = '🌙';
+    }
+  }
+});
