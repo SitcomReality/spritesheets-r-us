@@ -1,0 +1,112 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spritesheets R Us</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Spritesheets R Us</h1>
+    <p>Generate and download custom sprite sheets using AI-generated images</p>
+  </header>
+
+  <main>
+    <section id="configuration">
+      <h2>Grid Configuration</h2>
+      <div class="config-controls">
+        <div class="input-group">
+          <label for="rows">Rows:</label>
+          <input type="number" id="rows" min="1" max="16" value="4">
+        </div>
+        <div class="input-group">
+          <label for="columns">Columns:</label>
+          <input type="number" id="columns" min="1" max="16" value="4">
+        </div>
+        <div class="input-group">
+          <label for="cellWidth">Cell Width (px):</label>
+          <input type="number" id="cellWidth" min="16" max="512" value="64">
+        </div>
+        <div class="input-group">
+          <label for="cellHeight">Cell Height (px):</label>
+          <input type="number" id="cellHeight" min="16" max="512" value="64">
+        </div>
+        <button id="updateGrid" class="primary-button">Update Grid</button>
+      </div>
+    </section>
+
+    <section id="prompts">
+      <h2>Prompt Configuration</h2>
+      <div class="global-prompts">
+        <div class="input-group full-width">
+          <label for="prefixPrompt">Prefix Prompt:</label>
+          <textarea id="prefixPrompt" placeholder="Enter text to prepend to all prompts (e.g., 'pixel art character')"></textarea>
+        </div>
+        <div class="input-group full-width">
+          <label for="suffixPrompt">Suffix Prompt:</label>
+          <textarea id="suffixPrompt" placeholder="Enter text to append to all prompts (e.g., 'top-down view, 16-bit style')"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section id="gridContainer">
+      <div class="grids-wrapper">
+        <div class="grid-section">
+          <h2>Prompt Grid</h2>
+          <div id="promptGrid" class="grid"></div>
+        </div>
+        <div class="grid-section">
+          <h2>Image Grid</h2>
+          <div id="imageGrid" class="grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="controls">
+      <button id="generateAll" class="primary-button">Generate All Images</button>
+      <button id="resetAll" class="secondary-button">Reset All</button>
+    </section>
+
+    <section id="spritesheet">
+      <h2>Spritesheet Preview</h2>
+      <div id="spritesheetPreview">
+        <p class="empty-message">Generate images to create a spritesheet</p>
+      </div>
+      <button id="downloadSpritesheet" class="primary-button" disabled>Download Spritesheet</button>
+    </section>
+  </main>
+
+  <div id="confirmationModal" class="modal">
+    <div class="modal-content">
+      <h2 id="confirmationTitle">Confirmation</h2>
+      <p id="confirmationMessage"></p>
+      <div class="modal-buttons">
+        <button id="confirmYes" class="primary-button">Yes</button>
+        <button id="confirmNo" class="secondary-button">No</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="progressModal" class="modal">
+    <div class="modal-content">
+      <h2>Generating Images</h2>
+      <p id="progressMessage">Generating image 0 of 0</p>
+      <div class="progress-bar-container">
+        <div id="progressBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Spritesheets R Us © 2023 - Create pixel-perfect spritesheets with AI</p>
+  </footer>
+
+  <script type="importmap">
+    {
+      "imports": {}
+    }
+  </script>
+  <script src="script.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
