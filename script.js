@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // State
   let currentState = {
-    rows: 4,
-    columns: 4,
+    rows: 2,
+    columns: 2,
     cellWidth: 1024,
     cellHeight: 1024,
     cells: [], // Will contain prompt text and image data for each cell
@@ -490,6 +490,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.createElement('canvas');
     canvas.width = currentState.columns * currentState.cellWidth;
     canvas.height = currentState.rows * currentState.cellHeight;
+    
+    // Track if canvas is displayed at full size or contained
+    canvas.dataset.fullSize = 'false';
+    
+    // Set initial canvas size to be contained in the preview div
+    updateCanvasSize(canvas);
+    
+    // Set cursor style based on if zooming is possible
+    updateCanvasCursor(canvas);
+    
+    // Add click event to toggle zoom
+    canvas.addEventListener('click', () => toggleCanvasZoom(canvas));
+    
     const ctx = canvas.getContext('2d');
     
     // Add the canvas to the preview
@@ -498,7 +511,52 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load and draw all available images
     drawSpritesheetOnCanvas(canvas, ctx);
   }
-
+  
+  function updateCanvasSize(canvas) {
+    const isFullSize = canvas.dataset.fullSize === 'true';
+    const containerWidth = spritesheetPreview.clientWidth;
+    
+    if (isFullSize) {
+      // Display at natural size
+      canvas.style.width = 'auto';
+      canvas.style.height = 'auto';
+    } else {
+      // Scale down to fit container width if needed
+      if (canvas.width > containerWidth) {
+        const scale = containerWidth / canvas.width;
+        canvas.style.width = '100%';
+        canvas.style.height = 'auto';
+      } else {
+        canvas.style.width = 'auto';
+        canvas.style.height = 'auto';
+      }
+    }
+  }
+  
+  function updateCanvasCursor(canvas) {
+    const containerWidth = spritesheetPreview.clientWidth;
+    
+    if (canvas.width <= containerWidth) {
+      // Canvas fits without scaling - use normal cursor
+      canvas.style.cursor = 'default';
+    } else {
+      // Canvas needs scaling - use zoom cursor based on current state
+      const isFullSize = canvas.dataset.fullSize === 'true';
+      canvas.style.cursor = isFullSize ? 'zoom-out' : 'zoom-in';
+    }
+  }
+  
+  function toggleCanvasZoom(canvas) {
+    const containerWidth = spritesheetPreview.clientWidth;
+    
+    // Only toggle if canvas is wider than container
+    if (canvas.width > containerWidth) {
+      canvas.dataset.fullSize = canvas.dataset.fullSize === 'true' ? 'false' : 'true';
+      updateCanvasSize(canvas);
+      updateCanvasCursor(canvas);
+    }
+  }
+  
   function drawSpritesheetOnCanvas(canvas, ctx) {
     let loadedImages = 0;
     const totalCells = currentState.cells.length;
@@ -766,28 +824,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function populateGrid(contentSet) {
     // Ensure the contentSet has enough items
-    let index = 0;
     
     // Reset all cells first
     currentState.cells.forEach(cell => {
       cell.prompt = '';
     });
     
-    // Fill grid with content from the preset
-    for (let row = 0; row < currentState.rows; row++) {
-      for (let col = 0; col < currentState.columns; col++) {
-        const cellIndex = row * currentState.columns + col;
-        
-        if (index < contentSet.length) {
-          currentState.cells[cellIndex].prompt = contentSet[index];
-        } else {
-          // If we run out of content, cycle through the array again
-          currentState.cells[cellIndex].prompt = contentSet[index % contentSet.length];
-        }
-        
-        index++;
-      }
-    }
+    // Create a shuffled copy of the content set array
+    const shuffledContent = [...contentSet].sort(() => Math.random() - 0.5);
+    
+    // Fill grid with random content from the preset
+    currentState.cells.forEach((cell, index) => {
+      // Pick a random item from the content set
+      const randomIndex = Math.floor(Math.random() * contentSet.length);
+      cell.prompt = contentSet[randomIndex];
+    });
     
     // Update the prompt grid to show the new content
     createPromptGrid();
