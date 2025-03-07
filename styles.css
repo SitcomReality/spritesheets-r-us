@@ -103,6 +103,19 @@ input, textarea {
   font-size: 1rem;
 }
 
+input:disabled {
+  background-color: #f0f0f0;
+  color: #666;
+  cursor: not-allowed;
+  border-color: #ccc;
+}
+
+body.dark-mode input:disabled {
+  background-color: #3a3a3a;
+  color: #999;
+  border-color: #555;
+}
+
 textarea {
   resize: vertical;
   min-height: 60px;

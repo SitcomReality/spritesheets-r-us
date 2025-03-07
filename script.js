@@ -4,6 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const columnsInput = document.getElementById('columns');
   const cellWidthInput = document.getElementById('cellWidth');
   const cellHeightInput = document.getElementById('cellHeight');
+  
+  // Set fixed size of 1024x1024 and disable inputs
+  cellWidthInput.value = 1024;
+  cellHeightInput.value = 1024;
+  cellWidthInput.disabled = true;
+  cellHeightInput.disabled = true;
+  
   const updateGridBtn = document.getElementById('updateGrid');
   const prefixPromptInput = document.getElementById('prefixPrompt');
   const suffixPromptInput = document.getElementById('suffixPrompt');
@@ -27,8 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentState = {
     rows: 4,
     columns: 4,
-    cellWidth: 64,
-    cellHeight: 64,
+    cellWidth: 1024,
+    cellHeight: 1024,
     cells: [], // Will contain prompt text and image data for each cell
     isGenerating: false,
     darkMode: false
@@ -54,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function createGrids() {
     const rows = parseInt(rowsInput.value);
     const columns = parseInt(columnsInput.value);
-    const cellWidth = parseInt(cellWidthInput.value);
-    const cellHeight = parseInt(cellHeightInput.value);
+    const cellWidth = parseInt(cellWidthInput.value); // Will always be 1024
+    const cellHeight = parseInt(cellHeightInput.value); // Will always be 1024
 
     if (!validateGridInputs(rows, columns, cellWidth, cellHeight)) {
       return;
