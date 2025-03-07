@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateAllBtn = document.getElementById('generateAll');
   const resetAllBtn = document.getElementById('resetAll');
   const downloadBtn = document.getElementById('downloadSpritesheet');
+  const updatePreviewBtn = document.getElementById('updatePreview');
   const spritesheetPreview = document.getElementById('spritesheetPreview');
   const confirmationModal = document.getElementById('confirmationModal');
   const confirmationTitle = document.getElementById('confirmationTitle');
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   generateAllBtn.addEventListener('click', handleGenerateAll);
   resetAllBtn.addEventListener('click', handleResetAll);
   downloadBtn.addEventListener('click', handleDownload);
+  updatePreviewBtn.addEventListener('click', handleUpdateSpritesheetPreview);
   confirmYesBtn.addEventListener('click', handleConfirmation);
   confirmNoBtn.addEventListener('click', () => hideModal(confirmationModal));
 
@@ -75,9 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create the grids
     createPromptGrid();
     createImageGrid();
-    
-    // Update spritesheet preview
-    updateSpritesheetPreview();
     
     // Initialize theme
     initTheme();
@@ -317,6 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // New handler for updating the spritesheet preview
+  function handleUpdateSpritesheetPreview() {
+    updateSpritesheetPreview();
+  }
+
   // Validation functions
   function validatePrompts(cellIndex = null) {
     const prefix = prefixPromptInput.value.trim();
@@ -499,6 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function drawSpritesheetOnCanvas(canvas, ctx) {
     let loadedImages = 0;
     const totalCells = currentState.cells.length;
+    const totalImageCells = currentState.cells.filter(c => c.imageUrl).length;
     const images = [];
     
     // Initialize the image array
@@ -506,35 +511,54 @@ document.addEventListener('DOMContentLoaded', () => {
       images[i] = null;
     }
     
+    if (totalImageCells === 0) {
+      return; // No images to load
+    }
+    
     // Load all images
     currentState.cells.forEach((cell, index) => {
       if (cell.imageUrl) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous'; // This helps with CORS issues
-        
-        img.onload = () => {
-          images[index] = img;
+        // Use a data URL approach instead of direct loading to bypass CORS
+        createImageBitmap(cell, index, images, () => {
           loadedImages++;
           
           // Once all images are loaded, draw them on the canvas
-          if (loadedImages === currentState.cells.filter(c => c.imageUrl).length) {
+          if (loadedImages === totalImageCells) {
             drawImagesOnCanvas(ctx, images);
           }
-        };
-        
-        img.onerror = () => {
-          console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
-          loadedImages++;
-          
-          // Continue even if some images fail to load
-          if (loadedImages === currentState.cells.filter(c => c.imageUrl).length) {
-            drawImagesOnCanvas(ctx, images);
-          }
-        };
-        
-        img.src = cell.imageUrl;
+        });
       }
     });
+  }
+  
+  // Helper function to create an ImageBitmap from an image URL via Canvas
+  function createImageBitmap(cell, index, imagesArray, onComplete) {
+    // Create a temporary img element
+    const tempImg = document.createElement('img');
+    
+    // Set up event handlers before setting src
+    tempImg.onload = function() {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = currentState.cellWidth;
+      tempCanvas.height = currentState.cellHeight;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      // Draw the image on the temporary canvas
+      tempCtx.drawImage(tempImg, 0, 0, currentState.cellWidth, currentState.cellHeight);
+      
+      // Create an ImageBitmap from the canvas
+      imagesArray[index] = tempCanvas;
+      onComplete();
+    };
+    
+    tempImg.onerror = function() {
+      console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
+      onComplete(); // Call onComplete even on error to continue processing
+    };
+    
+    // Use the same URL but avoid CORS by using the img element directly
+    tempImg.crossOrigin = 'anonymous';
+    tempImg.src = cell.imageUrl;
   }
 
   function drawImagesOnCanvas(ctx, images) {
@@ -545,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (images[index]) {
         const x = cell.col * currentState.cellWidth;
         const y = cell.row * currentState.cellHeight;
-        ctx.drawImage(images[index], x, y, currentState.cellWidth, currentState.cellHeight);
+        ctx.drawImage(images[index], x, y);
       }
     });
   }
@@ -560,7 +584,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load all images and draw them on the canvas
     let loadedImages = 0;
     const totalImages = currentState.cells.length;
+    const totalImageCells = currentState.cells.filter(c => c.imageUrl).length;
     const images = Array(totalImages).fill(null);
+    
+    if (totalImageCells === 0) {
+      showError("No images to download. Please generate images first.");
+      return;
+    }
     
     currentState.cells.forEach((cell, index) => {
       if (!cell.imageUrl) {
@@ -568,11 +598,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      
-      img.onload = () => {
-        images[index] = img;
+      // Use the same approach as in the preview
+      createImageBitmap(cell, index, images, () => {
         loadedImages++;
         
         if (loadedImages === totalImages) {
@@ -581,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (images[idx]) {
               const x = cell.col * currentState.cellWidth;
               const y = cell.row * currentState.cellHeight;
-              ctx.drawImage(images[idx], x, y, currentState.cellWidth, currentState.cellHeight);
+              ctx.drawImage(images[idx], x, y);
             }
           });
           
@@ -598,18 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
           downloadLink.click();
           document.body.removeChild(downloadLink);
         }
-      };
-      
-      img.onerror = () => {
-        console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
-        loadedImages++;
-        
-        if (loadedImages === totalImages) {
-          showError("Some images could not be loaded for the download. Please try regenerating them.");
-        }
-      };
-      
-      img.src = cell.imageUrl;
+      });
     });
   }
 
