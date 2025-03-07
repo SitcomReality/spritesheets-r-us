@@ -101,6 +101,8 @@ input, textarea {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   font-size: 1rem;
+  background-color: var(--card-color);
+  color: var(--text-color);
 }
 
 input:disabled {
@@ -150,7 +152,13 @@ button:active {
 
 .primary-button:disabled {
   background-color: #cccccc;
+  color: #666;
   cursor: not-allowed;
+}
+
+body.dark-mode .primary-button:disabled {
+  background-color: #555555;
+  color: #aaaaaa;
 }
 
 .secondary-button {
@@ -161,6 +169,16 @@ button:active {
 
 .secondary-button:hover {
   background-color: #e0e0e0;
+}
+
+body.dark-mode .secondary-button {
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+  border-color: #555;
+}
+
+body.dark-mode .secondary-button:hover {
+  background-color: #4a4a4a;
 }
 
 .global-prompts {
