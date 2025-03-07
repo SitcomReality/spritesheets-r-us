@@ -4,13 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const columnsInput = document.getElementById('columns');
   const cellWidthInput = document.getElementById('cellWidth');
   const cellHeightInput = document.getElementById('cellHeight');
-  
-  // Set fixed size of 1024x1024 and disable inputs
-  cellWidthInput.value = 1024;
-  cellHeightInput.value = 1024;
-  cellWidthInput.disabled = true;
-  cellHeightInput.disabled = true;
-  
   const updateGridBtn = document.getElementById('updateGrid');
   const prefixPromptInput = document.getElementById('prefixPrompt');
   const suffixPromptInput = document.getElementById('suffixPrompt');
@@ -29,16 +22,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const progressMessage = document.getElementById('progressMessage');
   const progressBar = document.getElementById('progressBar');
   const updatePreviewBtn = document.getElementById('updatePreview');
+  const colorToRemoveInput = document.getElementById('colorToRemove');
+  const colorHexInput = document.getElementById('colorHexInput');
+  const colorPreview = document.getElementById('colorPreview');
+  const eyedropperToggle = document.getElementById('eyedropperToggle');
+  const useCommonColorBtn = document.getElementById('useCommonColor');
+  const removeExactColorBtn = document.getElementById('removeExactColor');
+  const removeWithToleranceBtn = document.getElementById('removeWithTolerance');
+  const toleranceValueInput = document.getElementById('toleranceValue');
 
   // State
   let currentState = {
-    rows: 2,
-    columns: 2,
+    rows: 4,
+    columns: 4,
     cellWidth: 1024,
     cellHeight: 1024,
     cells: [], // Will contain prompt text and image data for each cell
     isGenerating: false,
-    darkMode: false
+    darkMode: false,
+    selectedColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' },
+    mostCommonColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' }
   };
 
   // Initialize the grids
@@ -52,6 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
   confirmYesBtn.addEventListener('click', handleConfirmation);
   confirmNoBtn.addEventListener('click', () => hideModal(confirmationModal));
   updatePreviewBtn.addEventListener('click', updateSpritesheetPreview);
+  colorToRemoveInput.addEventListener('change', handleColorChange);
+  colorHexInput.addEventListener('input', handleHexInput);
+  useCommonColorBtn.addEventListener('click', useCommonColor);
+  removeExactColorBtn.addEventListener('click', () => removeBackground(false));
+  removeWithToleranceBtn.addEventListener('click', () => removeBackground(true));
 
   // Theme toggle
   const themeToggleBtn = document.getElementById('themeToggle');
@@ -490,19 +498,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.createElement('canvas');
     canvas.width = currentState.columns * currentState.cellWidth;
     canvas.height = currentState.rows * currentState.cellHeight;
-    
-    // Track if canvas is displayed at full size or contained
-    canvas.dataset.fullSize = 'false';
-    
-    // Set initial canvas size to be contained in the preview div
-    updateCanvasSize(canvas);
-    
-    // Set cursor style based on if zooming is possible
-    updateCanvasCursor(canvas);
-    
-    // Add click event to toggle zoom
-    canvas.addEventListener('click', () => toggleCanvasZoom(canvas));
-    
     const ctx = canvas.getContext('2d');
     
     // Add the canvas to the preview
@@ -510,53 +505,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Load and draw all available images
     drawSpritesheetOnCanvas(canvas, ctx);
-  }
-  
-  function updateCanvasSize(canvas) {
-    const isFullSize = canvas.dataset.fullSize === 'true';
-    const containerWidth = spritesheetPreview.clientWidth;
     
-    if (isFullSize) {
-      // Display at natural size
-      canvas.style.width = 'auto';
-      canvas.style.height = 'auto';
-    } else {
-      // Scale down to fit container width if needed
-      if (canvas.width > containerWidth) {
-        const scale = containerWidth / canvas.width;
-        canvas.style.width = '100%';
-        canvas.style.height = 'auto';
-      } else {
-        canvas.style.width = 'auto';
-        canvas.style.height = 'auto';
-      }
-    }
+    // Setup eyedropper for the canvas
+    backgroundRemover.setupEyedropper(canvas, colorToRemoveInput, eyedropperToggle);
   }
-  
-  function updateCanvasCursor(canvas) {
-    const containerWidth = spritesheetPreview.clientWidth;
-    
-    if (canvas.width <= containerWidth) {
-      // Canvas fits without scaling - use normal cursor
-      canvas.style.cursor = 'default';
-    } else {
-      // Canvas needs scaling - use zoom cursor based on current state
-      const isFullSize = canvas.dataset.fullSize === 'true';
-      canvas.style.cursor = isFullSize ? 'zoom-out' : 'zoom-in';
-    }
-  }
-  
-  function toggleCanvasZoom(canvas) {
-    const containerWidth = spritesheetPreview.clientWidth;
-    
-    // Only toggle if canvas is wider than container
-    if (canvas.width > containerWidth) {
-      canvas.dataset.fullSize = canvas.dataset.fullSize === 'true' ? 'false' : 'true';
-      updateCanvasSize(canvas);
-      updateCanvasCursor(canvas);
-    }
-  }
-  
+
   function drawSpritesheetOnCanvas(canvas, ctx) {
     let loadedImages = 0;
     const totalCells = currentState.cells.length;
@@ -785,6 +738,126 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Background removal functions
+  function handleColorChange(e) {
+    const colorHex = e.target.value;
+    colorHexInput.value = colorHex;
+    colorPreview.style.backgroundColor = colorHex;
+    
+    // Update state with selected color
+    const rgb = backgroundRemover.hexToRgb(colorHex);
+    currentState.selectedColor = {
+      r: rgb.r,
+      g: rgb.g,
+      b: rgb.b,
+      hex: colorHex,
+      rgba: `rgba(${rgb.r},${rgb.g},${rgb.b},1)`
+    };
+  }
+  
+  function handleHexInput(e) {
+    const value = e.target.value;
+    
+    // Make sure the value starts with #
+    if (!value.startsWith('#')) {
+      e.target.value = '#' + value;
+    }
+    
+    // Validate hex format with regex
+    const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    if (hexRegex.test(value)) {
+      colorToRemoveInput.value = value;
+      colorPreview.style.backgroundColor = value;
+      
+      // Update state with selected color
+      const rgb = backgroundRemover.hexToRgb(value);
+      currentState.selectedColor = {
+        r: rgb.r,
+        g: rgb.g,
+        b: rgb.b,
+        hex: value,
+        rgba: `rgba(${rgb.r},${rgb.g},${rgb.b},1)`
+      };
+    }
+  }
+  
+  function useCommonColor() {
+    const canvas = spritesheetPreview.querySelector('canvas');
+    if (!canvas) {
+      showError("Please generate a spritesheet preview first.");
+      return;
+    }
+    
+    // Find the most common color in the canvas
+    const mostCommonColor = backgroundRemover.findMostCommonColor(canvas);
+    currentState.mostCommonColor = mostCommonColor;
+    
+    // Update the UI
+    colorToRemoveInput.value = mostCommonColor.hex;
+    colorHexInput.value = mostCommonColor.hex;
+    colorPreview.style.backgroundColor = mostCommonColor.hex;
+    
+    // Update the button text
+    useCommonColorBtn.textContent = `Use Most Common Color (${mostCommonColor.hex})`;
+    
+    // Update state with selected color
+    currentState.selectedColor = mostCommonColor;
+  }
+  
+  function removeBackground(useTolerance) {
+    const canvas = spritesheetPreview.querySelector('canvas');
+    if (!canvas) {
+      showError("Please generate a spritesheet preview first.");
+      return;
+    }
+    
+    // Clone the canvas to avoid modifying the original
+    const clonedCanvas = document.createElement('canvas');
+    clonedCanvas.width = canvas.width;
+    clonedCanvas.height = canvas.height;
+    const ctx = clonedCanvas.getContext('2d');
+    ctx.drawImage(canvas, 0, 0);
+    
+    if (useTolerance) {
+      // Show loading modal
+      showModal(progressModal);
+      progressMessage.textContent = "Removing background with tolerance...";
+      progressBar.style.width = "50%";
+      
+      // Use setTimeout to allow the UI to update before the heavy processing
+      setTimeout(() => {
+        const tolerance = parseInt(toleranceValueInput.value) || 30;
+        backgroundRemover.removeColorWithTolerance(clonedCanvas, currentState.selectedColor, tolerance);
+        
+        // Replace the original canvas
+        canvas.parentNode.replaceChild(clonedCanvas, canvas);
+        
+        // Setup eyedropper for the new canvas
+        backgroundRemover.setupEyedropper(clonedCanvas, colorToRemoveInput, eyedropperToggle);
+        
+        hideModal(progressModal);
+      }, 100);
+    } else {
+      // Exact color removal is fast enough to not need a loading indicator
+      backgroundRemover.removeExactColor(clonedCanvas, currentState.selectedColor);
+      
+      // Replace the original canvas
+      canvas.parentNode.replaceChild(clonedCanvas, canvas);
+      
+      // Setup eyedropper for the new canvas
+      backgroundRemover.setupEyedropper(clonedCanvas, colorToRemoveInput, eyedropperToggle);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    colorHexInput.value = currentState.selectedColor.hex;
+    colorPreview.style.backgroundColor = currentState.selectedColor.hex;
+    
+    // Initialize event listeners for color inputs
+    colorToRemoveInput.addEventListener('change', handleColorChange);
+    colorHexInput.addEventListener('input', handleHexInput);
+  });
+
   // Add the content suggestion system
   const contentSuggestions = document.getElementById('contentSuggestions');
   const styleOptions = document.getElementById('styleOptions');
@@ -824,21 +897,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function populateGrid(contentSet) {
     // Ensure the contentSet has enough items
+    let index = 0;
     
     // Reset all cells first
     currentState.cells.forEach(cell => {
       cell.prompt = '';
     });
     
-    // Create a shuffled copy of the content set array
-    const shuffledContent = [...contentSet].sort(() => Math.random() - 0.5);
-    
-    // Fill grid with random content from the preset
-    currentState.cells.forEach((cell, index) => {
-      // Pick a random item from the content set
-      const randomIndex = Math.floor(Math.random() * contentSet.length);
-      cell.prompt = contentSet[randomIndex];
-    });
+    // Fill grid with content from the preset
+    for (let row = 0; row < currentState.rows; row++) {
+      for (let col = 0; col < currentState.columns; col++) {
+        const cellIndex = row * currentState.columns + col;
+        
+        if (index < contentSet.length) {
+          currentState.cells[cellIndex].prompt = contentSet[index];
+        } else {
+          // If we run out of content, cycle through the array again
+          currentState.cells[cellIndex].prompt = contentSet[index % contentSet.length];
+        }
+        
+        index++;
+      }
+    }
     
     // Update the prompt grid to show the new content
     createPromptGrid();
