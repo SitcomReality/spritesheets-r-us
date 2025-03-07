@@ -394,6 +394,29 @@ footer {
   transition: width 0.3s ease;
 }
 
+.suggestion-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+select {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  background-color: var(--card-color);
+  color: var(--text-color);
+  width: 100%;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: 2px solid var(--primary-light);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .config-controls {
@@ -401,6 +424,14 @@ footer {
   }
   
   .input-group {
+    width: 100%;
+  }
+  
+  .suggestion-controls {
+    flex-direction: column;
+  }
+  
+  .suggestion-controls .input-group {
     width: 100%;
   }
   

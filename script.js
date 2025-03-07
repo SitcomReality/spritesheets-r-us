@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
           col,
           prompt: '',
           imageUrl: null,
+          localUrl: null,
           isGenerating: false,
           error: null
         });
@@ -200,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (cell.imageUrl) {
           const img = document.createElement('img');
           img.className = 'image-preview';
-          img.src = cell.imageUrl;
+          img.src = cell.localUrl || cell.imageUrl; // Use the local URL if available
           img.alt = `Generated image for cell (${row + 1}, ${col + 1})`;
           cellElement.appendChild(img);
         } else {
@@ -353,28 +354,26 @@ document.addEventListener('DOMContentLoaded', () => {
   async function generateImage(prompt) {
     try {
       // Use the websim.imageGen function from the integration
-      return await websim.imageGen({
+      const result = await websim.imageGen({
         prompt: prompt,
         width: currentState.cellWidth,
         height: currentState.cellHeight
       });
+      
+      // After getting the result, fetch the image as a blob and create a local URL
+      try {
+        const response = await fetch(result.url);
+        const blob = await response.blob();
+        const objectURL = URL.createObjectURL(blob);
+        return { ...result, localUrl: objectURL };
+      } catch (error) {
+        console.warn('Failed to create local URL for image:', error);
+        return result;
+      }
     } catch (error) {
       console.error('Image generation API error:', error);
       throw new Error('Failed to generate image. Please try again later.');
     }
-  }
-
-  function updateUIForGeneration(isGenerating) {
-    generateAllBtn.disabled = isGenerating;
-    updateGridBtn.disabled = isGenerating;
-    resetAllBtn.disabled = isGenerating;
-    updatePreviewBtn.disabled = isGenerating;
-    
-    // Disable/enable all "Generate This Cell" buttons
-    const cellButtons = promptGridElement.querySelectorAll('.cell-button');
-    cellButtons.forEach(button => {
-      button.disabled = isGenerating;
-    });
   }
 
   async function generateCell(cellIndex, updateUI = true) {
@@ -396,10 +395,12 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Update cell state with the generated image
       cell.imageUrl = result.url;
+      cell.localUrl = result.localUrl || result.url; // Use the local URL if available
       cell.isGenerating = false;
       
       if (updateUI) {
         createImageGrid();
+        updateSpritesheetPreview(); // Update the preview after generating a cell
       }
     } catch (error) {
       console.error('Image generation error:', error);
@@ -446,6 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Update the UI after all generations are complete
     createImageGrid();
+    updateSpritesheetPreview(); // Update spritesheet preview after all cells are generated
     
     if (hasErrors) {
       showError("Some images failed to generate. You can retry individual cells.");
@@ -507,25 +509,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (cell.imageUrl) {
         const img = new Image();
         
-        // Create a data URL from the cell image to avoid CORS issues
-        // This uses the HTML canvas element that's already displaying the image in the grid
-        try {
-          const imageCell = document.querySelector(`.image-cell[data-row="${cell.row}"][data-col="${cell.col}"] img`);
-          if (imageCell) {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = currentState.cellWidth;
-            tempCanvas.height = currentState.cellHeight;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(imageCell, 0, 0, currentState.cellWidth, currentState.cellHeight);
-            img.src = tempCanvas.toDataURL('image/png');
-          } else {
-            img.crossOrigin = 'anonymous';
-            img.src = cell.imageUrl;
+        // Use the local URL to avoid CORS issues
+        if (cell.localUrl) {
+          img.src = cell.localUrl;
+        } else {
+          // For backward compatibility, try to draw from the displayed image
+          try {
+            const imageCell = document.querySelector(`.image-cell[data-row="${cell.row}"][data-col="${cell.col}"] img`);
+            if (imageCell) {
+              img.src = imageCell.src;
+            } else {
+              console.warn(`No image element found for cell (${cell.row + 1}, ${cell.col + 1}), skipping`);
+              loadedImages++;
+              return;
+            }
+          } catch (e) {
+            console.warn('Failed to find image element, skipping cell', e);
+            loadedImages++;
+            return;
           }
-        } catch (e) {
-          console.warn('Failed to create local image copy, attempting direct load', e);
-          img.crossOrigin = 'anonymous';
-          img.src = cell.imageUrl;
         }
         
         img.onload = () => {
@@ -584,24 +586,24 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const img = new Image();
       
-      // Use the same CORS workaround as in drawSpritesheetOnCanvas
-      try {
-        const imageCell = document.querySelector(`.image-cell[data-row="${cell.row}"][data-col="${cell.col}"] img`);
-        if (imageCell) {
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = currentState.cellWidth;
-          tempCanvas.height = currentState.cellHeight;
-          const tempCtx = tempCanvas.getContext('2d');
-          tempCtx.drawImage(imageCell, 0, 0, currentState.cellWidth, currentState.cellHeight);
-          img.src = tempCanvas.toDataURL('image/png');
-        } else {
-          img.crossOrigin = 'anonymous';
-          img.src = cell.imageUrl;
+      // Use the local URL to avoid CORS issues
+      if (cell.localUrl) {
+        img.src = cell.localUrl;
+      } else {
+        try {
+          const imageCell = document.querySelector(`.image-cell[data-row="${cell.row}"][data-col="${cell.col}"] img`);
+          if (imageCell) {
+            img.src = imageCell.src;
+          } else {
+            console.warn(`No image found for cell (${cell.row + 1}, ${cell.col + 1}), skipping`);
+            loadedImages++;
+            return;
+          }
+        } catch (e) {
+          console.warn('Failed to find image, skipping cell', e);
+          loadedImages++;
+          return;
         }
-      } catch (e) {
-        console.warn('Failed to create local image copy, attempting direct load', e);
-        img.crossOrigin = 'anonymous';
-        img.src = cell.imageUrl;
       }
       
       img.onload = () => {
@@ -650,6 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentState.cells.forEach(cell => {
       cell.prompt = '';
       cell.imageUrl = null;
+      cell.localUrl = null;
       cell.isGenerating = false;
       cell.error = null;
     });
@@ -705,4 +708,171 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('themeToggle').textContent = '🌙';
     }
   }
+
+  function updateUIForGeneration(isGenerating) {
+    generateAllBtn.disabled = isGenerating;
+    updateGridBtn.disabled = isGenerating;
+    resetAllBtn.disabled = isGenerating;
+    updatePreviewBtn.disabled = isGenerating;
+    
+    // Disable/enable all "Generate This Cell" buttons
+    const cellButtons = promptGridElement.querySelectorAll('.cell-button');
+    cellButtons.forEach(button => {
+      button.disabled = isGenerating;
+    });
+  }
+
+  // Add the content suggestion system
+  const contentSuggestions = document.getElementById('contentSuggestions');
+  const styleOptions = document.getElementById('styleOptions');
+
+  if (contentSuggestions) {
+    contentSuggestions.addEventListener('change', function() {
+      if (this.value === '') return;
+      
+      const selectedContent = contentPresets[this.value];
+      if (selectedContent) {
+        populateGrid(selectedContent);
+      }
+      
+      // Reset the select after applying
+      this.value = '';
+    });
+  }
+
+  if (styleOptions) {
+    styleOptions.addEventListener('change', function() {
+      if (this.value === '') return;
+      
+      const selectedStyle = stylePresets[this.value];
+      if (selectedStyle) {
+        if (selectedStyle.prefix) {
+          prefixPromptInput.value = selectedStyle.prefix;
+        }
+        if (selectedStyle.suffix) {
+          suffixPromptInput.value = selectedStyle.suffix;
+        }
+      }
+      
+      // Reset the select after applying
+      this.value = '';
+    });
+  }
+
+  function populateGrid(contentSet) {
+    // Ensure the contentSet has enough items
+    let index = 0;
+    
+    // Reset all cells first
+    currentState.cells.forEach(cell => {
+      cell.prompt = '';
+    });
+    
+    // Fill grid with content from the preset
+    for (let row = 0; row < currentState.rows; row++) {
+      for (let col = 0; col < currentState.columns; col++) {
+        const cellIndex = row * currentState.columns + col;
+        
+        if (index < contentSet.length) {
+          currentState.cells[cellIndex].prompt = contentSet[index];
+        } else {
+          // If we run out of content, cycle through the array again
+          currentState.cells[cellIndex].prompt = contentSet[index % contentSet.length];
+        }
+        
+        index++;
+      }
+    }
+    
+    // Update the prompt grid to show the new content
+    createPromptGrid();
+  }
+
+  // Define preset content for the grid
+  const contentPresets = {
+    characters: [
+      "doctor", "nurse", "firefighter", "police officer",
+      "teacher", "student", "chef", "farmer",
+      "astronaut", "scientist", "artist", "musician",
+      "wizard", "knight", "ninja", "pirate"
+    ],
+    fantasy: [
+      "dragon", "unicorn", "phoenix", "griffin",
+      "werewolf", "vampire", "ghost", "zombie",
+      "fairy", "elf", "dwarf", "orc",
+      "mermaid", "centaur", "minotaur", "chimera"
+    ],
+    furniture: [
+      "sofa", "chair", "table", "bed",
+      "desk", "bookshelf", "cabinet", "dresser",
+      "lamp", "mirror", "clock", "rug",
+      "curtain", "pillow", "ottoman", "nightstand"
+    ],
+    buildings: [
+      "house", "apartment", "skyscraper", "cathedral",
+      "castle", "temple", "pyramid", "lighthouse",
+      "cabin", "barn", "windmill", "factory",
+      "school", "hospital", "library", "museum"
+    ],
+    vehicles: [
+      "car", "truck", "motorcycle", "bicycle",
+      "boat", "ship", "submarine", "airplane",
+      "helicopter", "rocket", "spaceship", "train",
+      "bus", "taxi", "tractor", "tank"
+    ],
+    animals: [
+      "dog", "cat", "horse", "cow",
+      "elephant", "lion", "tiger", "bear",
+      "monkey", "giraffe", "zebra", "kangaroo",
+      "penguin", "owl", "eagle", "shark"
+    ]
+  };
+
+  // Define style presets
+  const stylePresets = {
+    pixelArt: {
+      prefix: "pixel art",
+      suffix: "16-bit style, game sprite"
+    },
+    lineart: {
+      prefix: "minimalist line art, thin black outlines",
+      suffix: "white background, clean design"
+    },
+    papercraft: {
+      prefix: "papercraft, paper cutout",
+      suffix: "beveled 2.5D paper art, soft shadows"
+    },
+    voxel: {
+      prefix: "voxel 3D model",
+      suffix: "isometric view, minecraft style"
+    },
+    neonPastel: {
+      prefix: "vivid neon-pastel colors",
+      suffix: "pop art style, bright background"
+    },
+    watercolor: {
+      prefix: "delicate watercolor painting",
+      suffix: "wet on wet technique, soft colors, painterly"
+    },
+    retro3D: {
+      prefix: "retro 3D render",
+      suffix: "PS1 era low-poly style, texture mapped"
+    },
+    cute: {
+      prefix: "adorable, 3D render, cute whimsical character",
+      suffix: "chibi style, round features, big eyes"
+    }
+  };
+
+  // Clean up function for when images are no longer needed
+  function cleanupImageURLs() {
+    currentState.cells.forEach(cell => {
+      if (cell.localUrl && cell.localUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(cell.localUrl);
+      }
+    });
+  }
+
+  // Add event listener to clean up on page unload
+  window.addEventListener('beforeunload', cleanupImageURLs);
 });
