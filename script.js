@@ -480,6 +480,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Spritesheet functions
+  function downloadSpritesheet() {
+    // Use the current preview canvas instead of creating a new one
+    const canvas = spritesheetPreview.querySelector('canvas');
+    
+    if (!canvas) {
+      showError("Please generate a spritesheet preview first.");
+      return;
+    }
+    
+    // Convert canvas to downloadable data URL
+    const dataUrl = canvas.toDataURL('image/png');
+    
+    // Create a download link
+    const downloadLink = document.createElement('a');
+    downloadLink.href = dataUrl;
+    downloadLink.download = 'spritesheet.png';
+    
+    // Trigger the download
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  }
+
   function updateSpritesheetPreview() {
     // Clear the current preview
     spritesheetPreview.innerHTML = '';
@@ -500,20 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.width = currentState.columns * currentState.cellWidth;
     canvas.height = currentState.rows * currentState.cellHeight;
     
-    // Set cursor style and handle zoom toggle
-    if (canvas.width > spritesheetPreview.clientWidth) {
-      canvas.style.cursor = currentState.canvasFullSize ? 'zoom-out' : 'zoom-in';
-      canvas.style.width = currentState.canvasFullSize ? 'auto' : '100%';
-      
-      // Add click event to toggle zoom
-      canvas.addEventListener('click', () => {
-        currentState.canvasFullSize = !currentState.canvasFullSize;
-        canvas.style.cursor = currentState.canvasFullSize ? 'zoom-out' : 'zoom-in';
-        canvas.style.width = currentState.canvasFullSize ? 'auto' : '100%';
-      });
-    } else {
-      canvas.style.cursor = 'default';
-    }
+    setupCanvasZoomToggle(canvas);
     
     const ctx = canvas.getContext('2d');
     
@@ -599,84 +609,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function downloadSpritesheet() {
-    // Create a canvas for the final spritesheet
-    const canvas = document.createElement('canvas');
-    canvas.width = currentState.columns * currentState.cellWidth;
-    canvas.height = currentState.rows * currentState.cellHeight;
-    const ctx = canvas.getContext('2d');
-    
-    // Load all images and draw them on the canvas
-    let loadedImages = 0;
-    const totalImages = currentState.cells.length;
-    const images = Array(totalImages).fill(null);
-    
-    currentState.cells.forEach((cell, index) => {
-      if (!cell.imageUrl) {
-        loadedImages++;
-        return;
-      }
+  function setupCanvasZoomToggle(canvas) {
+    if (canvas.width > spritesheetPreview.clientWidth) {
+      canvas.style.cursor = currentState.canvasFullSize ? 'zoom-out' : 'zoom-in';
+      canvas.style.width = currentState.canvasFullSize ? 'auto' : '100%';
       
-      const img = new Image();
+      // Remove any existing click event listener
+      canvas.removeEventListener('click', canvasZoomToggleHandler);
       
-      // Use the local URL to avoid CORS issues
-      if (cell.localUrl) {
-        img.src = cell.localUrl;
-      } else {
-        try {
-          const imageCell = document.querySelector(`.image-cell[data-row="${cell.row}"][data-col="${cell.col}"] img`);
-          if (imageCell) {
-            img.src = imageCell.src;
-          } else {
-            console.warn(`No image found for cell (${cell.row + 1}, ${cell.col + 1}), skipping`);
-            loadedImages++;
-            return;
-          }
-        } catch (e) {
-          console.warn('Failed to find image, skipping cell', e);
-          loadedImages++;
-          return;
-        }
-      }
-      
-      img.onload = () => {
-        images[index] = img;
-        loadedImages++;
-        
-        if (loadedImages === totalImages) {
-          // Draw all images on the canvas
-          currentState.cells.forEach((cell, idx) => {
-            if (images[idx]) {
-              const x = cell.col * currentState.cellWidth;
-              const y = cell.row * currentState.cellHeight;
-              ctx.drawImage(images[idx], x, y, currentState.cellWidth, currentState.cellHeight);
-            }
-          });
-          
-          // Convert canvas to downloadable data URL
-          const dataUrl = canvas.toDataURL('image/png');
-          
-          // Create a download link
-          const downloadLink = document.createElement('a');
-          downloadLink.href = dataUrl;
-          downloadLink.download = 'spritesheet.png';
-          
-          // Trigger the download
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-        }
-      };
-      
-      img.onerror = () => {
-        console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
-        loadedImages++;
-        
-        if (loadedImages === totalImages) {
-          showError("Some images could not be loaded for the download. Please try regenerating them.");
-        }
-      };
-    });
+      // Add click event to toggle zoom
+      canvas.addEventListener('click', canvasZoomToggleHandler);
+    } else {
+      canvas.style.cursor = 'default';
+    }
+  }
+
+  function canvasZoomToggleHandler() {
+    currentState.canvasFullSize = !currentState.canvasFullSize;
+    this.style.cursor = currentState.canvasFullSize ? 'zoom-out' : 'zoom-in';
+    this.style.width = currentState.canvasFullSize ? 'auto' : '100%';
   }
 
   // Reset function
@@ -852,6 +803,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Setup eyedropper for the new canvas
         backgroundRemover.setupEyedropper(clonedCanvas, colorToRemoveInput, eyedropperToggle);
         
+        setupCanvasZoomToggle(clonedCanvas);
+        
         hideModal(progressModal);
       }, 100);
     } else {
@@ -863,6 +816,8 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Setup eyedropper for the new canvas
       backgroundRemover.setupEyedropper(clonedCanvas, colorToRemoveInput, eyedropperToggle);
+      
+      setupCanvasZoomToggle(clonedCanvas);
     }
   }
 
