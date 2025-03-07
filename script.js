@@ -479,12 +479,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // Create the canvas for the spritesheet
+    // Create the canvas for the spritesheet with exact dimensions
     const canvas = document.createElement('canvas');
     canvas.width = currentState.columns * currentState.cellWidth;
     canvas.height = currentState.rows * currentState.cellHeight;
-    canvas.style.maxWidth = '100%';  // Make preview responsive
-    canvas.style.height = 'auto';    // Maintain aspect ratio
     const ctx = canvas.getContext('2d');
     
     // Add the canvas to the preview
