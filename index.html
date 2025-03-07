@@ -37,6 +37,10 @@
 
     <section id="prompts">
       <h2>Prompt Configuration</h2>
+      <div class="save-load-container">
+        <button id="saveState" class="secondary-button">Save Current Configuration</button>
+        <button id="loadState" class="secondary-button">Load Saved Configuration</button>
+      </div>
       <div class="global-prompts">
         <div class="input-group full-width">
           <label for="prefixPrompt">Prefix Prompt:</label>
@@ -128,6 +132,19 @@
       </div>
       <button id="updatePreview" class="secondary-button">Update Spritesheet Preview</button>
       <button id="downloadSpritesheet" class="primary-button" disabled>Download Spritesheet</button>
+    </section>
+    
+    <section id="exportData">
+      <h2>Export Sprite Data</h2>
+      <p>Generate JavaScript code for using your spritesheet in your projects.</p>
+      
+      <div class="export-controls">
+        <button id="generateCoords" class="primary-button">Generate Coordinates</button>
+        <button id="generateBoundingBoxes" class="primary-button">Generate Bounding Boxes</button>
+        <button id="copyToClipboard" class="secondary-button">Copy to Clipboard</button>
+      </div>
+      
+      <textarea id="coordsOutput" class="code-output" readonly></textarea>
     </section>
   </main>
 

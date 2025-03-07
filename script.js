@@ -30,6 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const removeExactColorBtn = document.getElementById('removeExactColor');
   const removeWithToleranceBtn = document.getElementById('removeWithTolerance');
   const toleranceValueInput = document.getElementById('toleranceValue');
+  const saveStateBtn = document.getElementById('saveState');
+  const loadStateBtn = document.getElementById('loadState');
+  const generateCoordsBtn = document.getElementById('generateCoords');
+  const generateBoundingBoxesBtn = document.getElementById('generateBoundingBoxes');
+  const coordsOutput = document.getElementById('coordsOutput');
+  const copyToClipboardBtn = document.getElementById('copyToClipboard');
 
   // State
   let currentState = {
@@ -42,7 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
     darkMode: false,
     selectedColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' },
     mostCommonColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' },
-    canvasFullSize: false // New property to track canvas zoom state
+    canvasFullSize: false, // New property to track canvas zoom state
+    backgroundRemoved: false // Track if background removal has been applied
   };
 
   // Initialize the grids
@@ -61,6 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
   useCommonColorBtn.addEventListener('click', useCommonColor);
   removeExactColorBtn.addEventListener('click', () => removeBackground(false));
   removeWithToleranceBtn.addEventListener('click', () => removeBackground(true));
+  saveStateBtn.addEventListener('click', saveState);
+  loadStateBtn.addEventListener('click', loadState);
+  generateCoordsBtn.addEventListener('click', generateCoordsSnippet);
+  generateBoundingBoxesBtn.addEventListener('click', generateBoundingBoxesSnippet);
+  copyToClipboardBtn.addEventListener('click', copyOutputToClipboard);
 
   // Theme toggle
   const themeToggleBtn = document.getElementById('themeToggle');
@@ -260,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     imageCells.forEach(cell => {
-      if (parseInt(cell.dataset.row) === row && parseInt(cell.dataset.col) === col) {
+      if (InterruptedException(cell.dataset.row) === row && parseInt(cell.dataset.col) === col) {
         cell.classList.add('highlight');
       }
     });
@@ -326,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     downloadSpritesheet();
   }
-
+  
   let confirmationCallback = null;
   function handleConfirmation() {
     hideModal(confirmationModal);
@@ -805,6 +817,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         setupCanvasZoomToggle(clonedCanvas);
         
+        // Set background removed flag
+        currentState.backgroundRemoved = true;
+        
         hideModal(progressModal);
       }, 100);
     } else {
@@ -818,6 +833,9 @@ document.addEventListener('DOMContentLoaded', () => {
       backgroundRemover.setupEyedropper(clonedCanvas, colorToRemoveInput, eyedropperToggle);
       
       setupCanvasZoomToggle(clonedCanvas);
+      
+      // Set background removed flag
+      currentState.backgroundRemoved = true;
     }
   }
 
@@ -906,4 +924,193 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Add event listener to clean up on page unload
   window.addEventListener('beforeunload', cleanupImageURLs);
+
+  // Save/Load state functions
+  function saveState() {
+    try {
+      // Create a saveable state object
+      const stateToSave = {
+        rows: currentState.rows,
+        columns: currentState.columns,
+        prefixPrompt: prefixPromptInput.value,
+        suffixPrompt: suffixPromptInput.value,
+        cells: currentState.cells.map(cell => ({
+          row: cell.row,
+          col: cell.col,
+          prompt: cell.prompt
+        }))
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('spritesheetState', JSON.stringify(stateToSave));
+      
+      alert('Spritesheet configuration saved successfully!');
+    } catch (error) {
+      console.error('Error saving state:', error);
+      showError('Failed to save configuration. ' + error.message);
+    }
+  }
+  
+  function loadState() {
+    try {
+      // Get saved state from localStorage
+      const savedStateJSON = localStorage.getItem('spritesheetState');
+      if (!savedStateJSON) {
+        showError('No saved configuration found.');
+        return;
+      }
+      
+      const savedState = JSON.parse(savedStateJSON);
+      
+      // Update input fields
+      rowsInput.value = savedState.rows;
+      columnsInput.value = savedState.columns;
+      prefixPromptInput.value = savedState.prefixPrompt || '';
+      suffixPromptInput.value = savedState.suffixPrompt || '';
+      
+      // Update the grid
+      handleUpdateGrid();
+      
+      // Populate cell prompts
+      savedState.cells.forEach(savedCell => {
+        const cellIndex = savedCell.row * currentState.columns + savedCell.col;
+        if (cellIndex < currentState.cells.length) {
+          currentState.cells[cellIndex].prompt = savedCell.prompt;
+        }
+      });
+      
+      // Update the prompt grid
+      createPromptGrid();
+      
+      alert('Spritesheet configuration loaded successfully!');
+    } catch (error) {
+      console.error('Error loading state:', error);
+      showError('Failed to load configuration. ' + error.message);
+    }
+  }
+  
+  // Sprite coordinate export functions
+  function generateCoordsSnippet() {
+    const canvas = spritesheetPreview.querySelector('canvas');
+    if (!canvas) {
+      showError("Please generate a spritesheet preview first.");
+      return;
+    }
+    
+    const rows = currentState.rows;
+    const columns = currentState.columns;
+    const cellWidth = currentState.cellWidth;
+    const cellHeight = currentState.cellHeight;
+    
+    let snippet = '// Spritesheet coordinates\n';
+    snippet += 'const sprites = {\n';
+    
+    currentState.cells.forEach((cell, index) => {
+      const x = cell.col * cellWidth;
+      const y = cell.row * cellHeight;
+      const name = cell.prompt.trim().replace(/\s+/g, '_').toLowerCase() || `sprite_${index}`;
+      
+      snippet += `  ${name}: { x: ${x}, y: ${y}, width: ${cellWidth}, height: ${cellHeight} }, // "${cell.prompt}"\n`;
+    });
+    
+    snippet += '};\n';
+    
+    coordsOutput.value = snippet;
+  }
+  
+  function generateBoundingBoxesSnippet() {
+    const canvas = spritesheetPreview.querySelector('canvas');
+    if (!canvas) {
+      showError("Please generate a spritesheet preview first.");
+      return;
+    }
+    
+    if (!currentState.backgroundRemoved) {
+      showError("Please remove the background first to calculate accurate bounding boxes.");
+      return;
+    }
+    
+    // Show loading modal for potentially heavy operation
+    showModal(progressModal);
+    progressMessage.textContent = "Calculating bounding boxes...";
+    progressBar.style.width = "30%";
+    
+    setTimeout(() => {
+      try {
+        const ctx = canvas.getContext('2d');
+        const rows = currentState.rows;
+        const columns = currentState.columns;
+        const cellWidth = currentState.cellWidth;
+        const cellHeight = currentState.cellHeight;
+        
+        let snippet = '// Spritesheet bounding boxes\n';
+        snippet += 'const sprites = {\n';
+        
+        // For each cell, calculate the smallest rectangle containing all non-transparent pixels
+        currentState.cells.forEach((cell, index) => {
+          progressBar.style.width = `${30 + (index / currentState.cells.length) * 70}%`;
+          
+          const cellX = cell.col * cellWidth;
+          const cellY = cell.row * cellHeight;
+          const name = cell.prompt.trim().replace(/\s+/g, '_').toLowerCase() || `sprite_${index}`;
+          
+          // Get the image data for this cell
+          const imageData = ctx.getImageData(cellX, cellY, cellWidth, cellHeight);
+          const data = imageData.data;
+          
+          // Find the bounding box
+          let minX = cellWidth;
+          let minY = cellHeight;
+          let maxX = 0;
+          let maxY = 0;
+          let hasOpaque = false;
+          
+          for (let y = 0; y < cellHeight; y++) {
+            for (let x = 0; x < cellWidth; x++) {
+              const pixelIndex = (y * cellWidth + x) * 4;
+              const alpha = data[pixelIndex + 3];
+              
+              if (alpha > 0) { // Non-transparent pixel
+                hasOpaque = true;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+              }
+            }
+          }
+          
+          if (hasOpaque) {
+            const width = maxX - minX + 1;
+            const height = maxY - minY + 1;
+            snippet += `  ${name}: { x: ${cellX + minX}, y: ${cellY + minY}, width: ${width}, height: ${height} }, // "${cell.prompt}"\n`;
+          } else {
+            // If no opaque pixels found, use the full cell
+            snippet += `  ${name}: { x: ${cellX}, y: ${cellY}, width: ${cellWidth}, height: ${cellHeight} }, // "${cell.prompt}" (no visible content)\n`;
+          }
+        });
+        
+        snippet += '};\n';
+        
+        coordsOutput.value = snippet;
+        hideModal(progressModal);
+      } catch (error) {
+        console.error('Error generating bounding boxes:', error);
+        hideModal(progressModal);
+        showError('Failed to generate bounding boxes: ' + error.message);
+      }
+    }, 100);
+  }
+  
+  function copyOutputToClipboard() {
+    if (!coordsOutput.value) {
+      showError("Please generate coordinates or bounding boxes first.");
+      return;
+    }
+    
+    coordsOutput.select();
+    document.execCommand('copy');
+    
+    alert('Code copied to clipboard!');
+  }
 });
