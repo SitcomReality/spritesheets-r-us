@@ -33,15 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // State
   let currentState = {
-    rows: 4,
-    columns: 4,
+    rows: 2,
+    columns: 2,
     cellWidth: 1024,
     cellHeight: 1024,
     cells: [], // Will contain prompt text and image data for each cell
     isGenerating: false,
     darkMode: false,
     selectedColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' },
-    mostCommonColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' }
+    mostCommonColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' },
+    canvasFullSize: false // New property to track canvas zoom state
   };
 
   // Initialize the grids
@@ -498,6 +499,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.createElement('canvas');
     canvas.width = currentState.columns * currentState.cellWidth;
     canvas.height = currentState.rows * currentState.cellHeight;
+    
+    // Set cursor style and handle zoom toggle
+    if (canvas.width > spritesheetPreview.clientWidth) {
+      canvas.style.cursor = currentState.canvasFullSize ? 'zoom-out' : 'zoom-in';
+      canvas.style.width = currentState.canvasFullSize ? 'auto' : '100%';
+      
+      // Add click event to toggle zoom
+      canvas.addEventListener('click', () => {
+        currentState.canvasFullSize = !currentState.canvasFullSize;
+        canvas.style.cursor = currentState.canvasFullSize ? 'zoom-out' : 'zoom-in';
+        canvas.style.width = currentState.canvasFullSize ? 'auto' : '100%';
+      });
+    } else {
+      canvas.style.cursor = 'default';
+    }
+    
     const ctx = canvas.getContext('2d');
     
     // Add the canvas to the preview
@@ -896,8 +913,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function populateGrid(contentSet) {
-    // Ensure the contentSet has enough items
-    let index = 0;
+    // Create a copy of the contentSet to draw from randomly
+    const contentCopy = [...contentSet];
     
     // Reset all cells first
     currentState.cells.forEach(cell => {
@@ -905,18 +922,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Fill grid with content from the preset
-    for (let row = 0; row < currentState.rows; row++) {
-      for (let col = 0; col < currentState.columns; col++) {
-        const cellIndex = row * currentState.columns + col;
-        
-        if (index < contentSet.length) {
-          currentState.cells[cellIndex].prompt = contentSet[index];
-        } else {
-          // If we run out of content, cycle through the array again
-          currentState.cells[cellIndex].prompt = contentSet[index % contentSet.length];
-        }
-        
-        index++;
+    for (let i = 0; i < currentState.cells.length; i++) {
+      if (contentCopy.length > 0) {
+        // Select a random index from the remaining content
+        const randomIndex = Math.floor(Math.random() * contentCopy.length);
+        // Assign the content and remove it from the array
+        currentState.cells[i].prompt = contentCopy[randomIndex];
+        contentCopy.splice(randomIndex, 1);
+      } else {
+        // If we run out of content, use random items from the original set
+        const randomIndex = Math.floor(Math.random() * contentSet.length);
+        currentState.cells[i].prompt = contentSet[randomIndex];
       }
     }
     
