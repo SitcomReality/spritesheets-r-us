@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetAllBtn = document.getElementById('resetAll');
   const downloadBtn = document.getElementById('downloadSpritesheet');
   const downloadScaleInput = document.getElementById('downloadScale');
+  const downloadResolutionInfo = document.getElementById('downloadResolutionInfo');
+  const applyScaleToExportCheckbox = document.getElementById('applyScaleToExport');
   const spritesheetPreview = document.getElementById('spritesheetPreview');
   const confirmationModal = document.getElementById('confirmationModal');
   const confirmationTitle = document.getElementById('confirmationTitle');
@@ -55,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize the grids
   createGrids();
+  updateDownloadResolutionInfo();
 
   // Event Listeners
   updateGridBtn.addEventListener('click', handleUpdateGrid);
@@ -67,13 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {
   colorToRemoveInput.addEventListener('change', handleColorChange);
   colorHexInput.addEventListener('input', handleHexInput);
   useCommonColorBtn.addEventListener('click', useCommonColor);
-  //removeExactColorBtn.addEventListener('click', () => removeBackground(false));
+  removeExactColorBtn.addEventListener('click', () => removeBackground(false));
   removeWithToleranceBtn.addEventListener('click', () => removeBackground(true));
   saveStateBtn.addEventListener('click', saveState);
   loadStateBtn.addEventListener('click', loadState);
   generateCoordsBtn.addEventListener('click', generateCoordsSnippet);
   generateBoundingBoxesBtn.addEventListener('click', generateBoundingBoxesSnippet);
   copyToClipboardBtn.addEventListener('click', copyOutputToClipboard);
+  downloadScaleInput.addEventListener('input', updateDownloadResolutionInfo);
 
   // Theme toggle
   const themeToggleBtn = document.getElementById('themeToggle');
@@ -292,6 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const oldColumns = currentState.columns;
     
     createGrids();
+    updateDownloadResolutionInfo();
     
     // Restore cell prompts that still exist in the new grid
     if (oldCells.length > 0) {
@@ -1035,15 +1040,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const cellWidth = currentState.cellWidth;
     const cellHeight = currentState.cellHeight;
     
+    // Apply scaling if checkbox is checked
+    const applyScale = applyScaleToExportCheckbox.checked;
+    const scale = applyScale ? parseFloat(downloadScaleInput.value) || 1.0 : 1.0;
+    
     let snippet = '// Spritesheet coordinates\n';
+    snippet += `// ${applyScale ? 'Scaled to ' + scale.toFixed(1) + 'x' : 'Original size'}\n`;
     snippet += 'const sprites = {\n';
     
     currentState.cells.forEach((cell, index) => {
-      const x = cell.col * cellWidth;
-      const y = cell.row * cellHeight;
+      const x = cell.col * cellWidth * scale;
+      const y = cell.row * cellHeight * scale;
+      const width = cellWidth * scale;
+      const height = cellHeight * scale;
       const name = cell.prompt.trim().replace(/\s+/g, '_').toLowerCase() || `sprite_${index}`;
       
-      snippet += `  ${name}: { x: ${x}, y: ${y}, width: ${cellWidth}, height: ${cellHeight} }, // "${cell.prompt}"\n`;
+      snippet += `  ${name}: { x: ${Math.round(x)}, y: ${Math.round(y)}, width: ${Math.round(width)}, height: ${Math.round(height)} }, // "${cell.prompt}"\n`;
     });
     
     snippet += '};\n';
@@ -1076,7 +1088,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const cellWidth = currentState.cellWidth;
         const cellHeight = currentState.cellHeight;
         
+        // Apply scaling if checkbox is checked
+        const applyScale = applyScaleToExportCheckbox.checked;
+        const scale = applyScale ? parseFloat(downloadScaleInput.value) || 1.0 : 1.0;
+        
         let snippet = '// Spritesheet bounding boxes\n';
+        snippet += `// ${applyScale ? 'Scaled to ' + scale.toFixed(1) + 'x' : 'Original size'}\n`;
         snippet += 'const sprites = {\n';
         
         // For each cell, calculate the smallest rectangle containing all non-transparent pixels
@@ -1116,10 +1133,22 @@ document.addEventListener('DOMContentLoaded', () => {
           if (hasOpaque) {
             const width = maxX - minX + 1;
             const height = maxY - minY + 1;
-            snippet += `  ${name}: { x: ${cellX + minX}, y: ${cellY + minY}, width: ${width}, height: ${height} }, // "${cell.prompt}"\n`;
+            
+            // Apply scaling to final coordinates
+            const scaledX = Math.round((cellX + minX) * scale);
+            const scaledY = Math.round((cellY + minY) * scale);
+            const scaledWidth = Math.round(width * scale);
+            const scaledHeight = Math.round(height * scale);
+            
+            snippet += `  ${name}: { x: ${scaledX}, y: ${scaledY}, width: ${scaledWidth}, height: ${scaledHeight} }, // "${cell.prompt}"\n`;
           } else {
             // If no opaque pixels found, use the full cell
-            snippet += `  ${name}: { x: ${cellX}, y: ${cellY}, width: ${cellWidth}, height: ${cellHeight} }, // "${cell.prompt}" (no visible content)\n`;
+            const scaledX = Math.round(cellX * scale);
+            const scaledY = Math.round(cellY * scale);
+            const scaledWidth = Math.round(cellWidth * scale);
+            const scaledHeight = Math.round(cellHeight * scale);
+            
+            snippet += `  ${name}: { x: ${scaledX}, y: ${scaledY}, width: ${scaledWidth}, height: ${scaledHeight} }, // "${cell.prompt}" (no visible content)\n`;
           }
         });
         
@@ -1145,5 +1174,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.execCommand('copy');
     
     alert('Code copied to clipboard!');
+  }
+
+  function updateDownloadResolutionInfo() {
+    const scale = parseFloat(downloadScaleInput.value) || 1.0;
+    const width = currentState.columns * currentState.cellWidth * scale;
+    const height = currentState.rows * currentState.cellHeight * scale;
+    downloadResolutionInfo.textContent = `Final resolution: ${Math.round(width)} × ${Math.round(height)} pixels`;
   }
 });

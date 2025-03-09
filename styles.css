@@ -508,6 +508,24 @@ select:focus {
   }
 }
 
+.scale-info {
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+  color: var(--primary-color);
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .config-controls {
