@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateAllBtn = document.getElementById('generateAll');
   const resetAllBtn = document.getElementById('resetAll');
   const downloadBtn = document.getElementById('downloadSpritesheet');
+  const downloadScaleInput = document.getElementById('downloadScale');
   const spritesheetPreview = document.getElementById('spritesheetPreview');
   const confirmationModal = document.getElementById('confirmationModal');
   const confirmationTitle = document.getElementById('confirmationTitle');
@@ -272,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     imageCells.forEach(cell => {
-      if (InterruptedException(cell.dataset.row) === row && parseInt(cell.dataset.col) === col) {
+      if (parseInt(cell.dataset.row) === row && parseInt(cell.dataset.col) === col) {
         cell.classList.add('highlight');
       }
     });
@@ -336,7 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    downloadSpritesheet();
+    const scale = parseFloat(downloadScaleInput.value) || 1.0;
+    downloadSpritesheet(scale);
   }
   
   let confirmationCallback = null;
@@ -492,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Spritesheet functions
-  function downloadSpritesheet() {
+  function downloadSpritesheet(scale = 1.0) {
     // Use the current preview canvas instead of creating a new one
     const canvas = spritesheetPreview.querySelector('canvas');
     
@@ -501,8 +503,18 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
+    // Create a temporary canvas for scaling if needed
+    let downloadCanvas = canvas;
+    if (scale !== 1.0) {
+      downloadCanvas = document.createElement('canvas');
+      const ctx = downloadCanvas.getContext('2d');
+      downloadCanvas.width = canvas.width * scale;
+      downloadCanvas.height = canvas.height * scale;
+      ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, downloadCanvas.width, downloadCanvas.height);
+    }
+    
     // Convert canvas to downloadable data URL
-    const dataUrl = canvas.toDataURL('image/png');
+    const dataUrl = downloadCanvas.toDataURL('image/png');
     
     // Create a download link
     const downloadLink = document.createElement('a');
