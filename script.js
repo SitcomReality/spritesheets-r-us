@@ -286,7 +286,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event handlers
   function handleUpdateGrid() {
+    // Save existing cell data before updating grid
+    const oldCells = [...currentState.cells];
+    const oldRows = currentState.rows;
+    const oldColumns = currentState.columns;
+    
     createGrids();
+    
+    // Restore cell prompts that still exist in the new grid
+    if (oldCells.length > 0) {
+      currentState.cells.forEach((cell) => {
+        // Find if this cell existed in the old grid
+        if (cell.row < oldRows && cell.col < oldColumns) {
+          const oldCellIndex = cell.row * oldColumns + cell.col;
+          if (oldCellIndex < oldCells.length) {
+            cell.prompt = oldCells[oldCellIndex].prompt;
+          }
+        }
+      });
+      
+      // Update the prompt grid to show the restored values
+      createPromptGrid();
+    }
   }
 
   function handleGenerateAll() {
