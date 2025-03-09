@@ -1038,47 +1038,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const columns = currentState.columns;
     const cellWidth = currentState.cellWidth;
     const cellHeight = currentState.cellHeight;
-    
+  
     // Apply scaling if checkbox is checked
     const applyScale = applyScaleToExportCheckbox.checked;
     const scale = applyScale ? parseFloat(downloadScaleInput.value) || 1.0 : 1.0;
-    
+  
     let snippet = '// Spritesheet coordinates\n';
-    snippet += `// ${applyScale ? 'Scaled to ' + scale.toFixed(1) + 'x' : 'Original size'}\n`;
+    snippet += `// ${applyScale ? 'Scaled to ' + scale.toFixed(2) + 'x' : 'Original size'}\n`;
     snippet += 'const sprites = {\n';
-    
+  
     currentState.cells.forEach((cell, index) => {
       const x = cell.col * cellWidth * scale;
       const y = cell.row * cellHeight * scale;
       const width = cellWidth * scale;
       const height = cellHeight * scale;
-      const name = cell.prompt.trim().replace(/\s+/g, '_').toLowerCase() || `sprite_${index}`;
-      
-      snippet += `  ${name}: { x: ${Math.round(x)}, y: ${Math.round(y)}, width: ${Math.round(width)}, height: ${Math.round(height)} }, // "${cell.prompt}"\n`;
+      // Sanitize prompt for variable name: remove non-alphanumeric chars, trim to 20 chars
+      const name = cell.prompt.trim()
+                   .replace(/[^a-zA-Z0-9_]/g, '_')
+                   .toLowerCase()
+                   .substring(0, 20) || `sprite_${index}`;
+      // Sanitize comment text to prevent breaking out of comment
+      const commentText = cell.prompt.replace(/[\*\/\\]/g, '_');
+  
+      snippet += `  ${name}: { x: ${Math.round(x)}, y: ${Math.round(y)}, width: ${Math.round(width)}, height: ${Math.round(height)} }, // "${commentText}"\n`;
     });
-    
+  
     snippet += '};\n';
-    
+  
     coordsOutput.value = snippet;
   }
-  
+
   function generateBoundingBoxesSnippet() {
     const canvas = spritesheetPreview.querySelector('canvas');
     if (!canvas) {
       showError("Please generate a spritesheet preview first.");
       return;
     }
-    
+  
     if (!currentState.backgroundRemoved) {
       showError("Please remove the background first to calculate accurate bounding boxes.");
       return;
     }
-    
+  
     // Show loading modal for potentially heavy operation
     showModal(progressModal);
     progressMessage.textContent = "Calculating bounding boxes...";
     progressBar.style.width = "30%";
-    
+  
     setTimeout(() => {
       try {
         const ctx = canvas.getContext('2d');
@@ -1086,39 +1092,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const columns = currentState.columns;
         const cellWidth = currentState.cellWidth;
         const cellHeight = currentState.cellHeight;
-        
+      
         // Apply scaling if checkbox is checked
         const applyScale = applyScaleToExportCheckbox.checked;
         const scale = applyScale ? parseFloat(downloadScaleInput.value) || 1.0 : 1.0;
-        
+      
         let snippet = '// Spritesheet bounding boxes\n';
-        snippet += `// ${applyScale ? 'Scaled to ' + scale.toFixed(1) + 'x' : 'Original size'}\n`;
+        snippet += `// ${applyScale ? 'Scaled to ' + scale.toFixed(2) + 'x' : 'Original size'}\n`;
         snippet += 'const sprites = {\n';
-        
+      
         // For each cell, calculate the smallest rectangle containing all non-transparent pixels
         currentState.cells.forEach((cell, index) => {
           progressBar.style.width = `${30 + (index / currentState.cells.length) * 70}%`;
-          
+        
           const cellX = cell.col * cellWidth;
           const cellY = cell.row * cellHeight;
-          const name = cell.prompt.trim().replace(/\s+/g, '_').toLowerCase() || `sprite_${index}`;
-          
+          // Sanitize prompt for variable name: remove non-alphanumeric chars, trim to 20 chars
+          const name = cell.prompt.trim()
+                       .replace(/[^a-zA-Z0-9_]/g, '_')
+                       .toLowerCase()
+                       .substring(0, 20) || `sprite_${index}`;
+          // Sanitize comment text to prevent breaking out of comment
+          const commentText = cell.prompt.replace(/[\*\/\\]/g, '_');
+  
           // Get the image data for this cell
           const imageData = ctx.getImageData(cellX, cellY, cellWidth, cellHeight);
           const data = imageData.data;
-          
+  
           // Find the bounding box
           let minX = cellWidth;
           let minY = cellHeight;
           let maxX = 0;
           let maxY = 0;
           let hasOpaque = false;
-          
+  
           for (let y = 0; y < cellHeight; y++) {
             for (let x = 0; x < cellWidth; x++) {
               const pixelIndex = (y * cellWidth + x) * 4;
               const alpha = data[pixelIndex + 3];
-              
+  
               if (alpha > 0) { // Non-transparent pixel
                 hasOpaque = true;
                 minX = Math.min(minX, x);
@@ -1128,31 +1140,31 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             }
           }
-          
+  
           if (hasOpaque) {
             const width = maxX - minX + 1;
             const height = maxY - minY + 1;
-            
+  
             // Apply scaling to final coordinates
             const scaledX = Math.round((cellX + minX) * scale);
             const scaledY = Math.round((cellY + minY) * scale);
             const scaledWidth = Math.round(width * scale);
             const scaledHeight = Math.round(height * scale);
-            
-            snippet += `  ${name}: { x: ${scaledX}, y: ${scaledY}, width: ${scaledWidth}, height: ${scaledHeight} }, // "${cell.prompt}"\n`;
+  
+            snippet += `  ${name}: { x: ${scaledX}, y: ${scaledY}, width: ${scaledWidth}, height: ${scaledHeight} }, // "${commentText}"\n`;
           } else {
             // If no opaque pixels found, use the full cell
             const scaledX = Math.round(cellX * scale);
             const scaledY = Math.round(cellY * scale);
             const scaledWidth = Math.round(cellWidth * scale);
             const scaledHeight = Math.round(cellHeight * scale);
-            
-            snippet += `  ${name}: { x: ${scaledX}, y: ${scaledY}, width: ${scaledWidth}, height: ${scaledHeight} }, // "${cell.prompt}" (no visible content)\n`;
+  
+            snippet += `  ${name}: { x: ${scaledX}, y: ${scaledY}, width: ${scaledWidth}, height: ${scaledHeight} }, // "${commentText}" (no visible content)\n`;
           }
         });
-        
+      
         snippet += '};\n';
-        
+      
         coordsOutput.value = snippet;
         hideModal(progressModal);
       } catch (error) {
@@ -1168,10 +1180,10 @@ document.addEventListener('DOMContentLoaded', () => {
       showError("Please generate coordinates or bounding boxes first.");
       return;
     }
-    
+  
     coordsOutput.select();
     document.execCommand('copy');
-    
+  
     alert('Code copied to clipboard!');
   }
 
