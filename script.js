@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   colorToRemoveInput.addEventListener('change', handleColorChange);
   colorHexInput.addEventListener('input', handleHexInput);
   useCommonColorBtn.addEventListener('click', useCommonColor);
-  removeExactColorBtn.addEventListener('click', () => removeBackground(false));
+  //removeExactColorBtn.addEventListener('click', () => removeBackground(false));
   removeWithToleranceBtn.addEventListener('click', () => removeBackground(true));
   saveStateBtn.addEventListener('click', saveState);
   loadStateBtn.addEventListener('click', loadState);
