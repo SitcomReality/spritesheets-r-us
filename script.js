@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const contentNameInput = document.getElementById('contentName');
   const savedStylesSelect = document.getElementById('savedStyles');
   const savedContentsSelect = document.getElementById('savedContents');
+  const rowStyleOverridesList = document.getElementById('rowStyleOverrides');
+  const colStyleOverridesList = document.getElementById('colStyleOverrides');
 
   // State
   let currentState = {
@@ -57,7 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' },
     mostCommonColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' },
     canvasFullSize: false, // New property to track canvas zoom state
-    backgroundRemoved: false // Track if background removal has been applied
+    backgroundRemoved: false, // Track if background removal has been applied
+    rowStyles: {}, // Store style overrides for rows: { rowIndex: { name, prefix, suffix } }
+    colStyles: {}  // Store style overrides for columns: { colIndex: { name, prefix, suffix } }
   };
 
   // Initialize tabs
@@ -137,6 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
     createPromptGrid();
     createImageGrid();
     
+    // Update style override lists
+    createRowStyleOverridesList();
+    createColStyleOverridesList();
+    
     // Update spritesheet preview
     updateSpritesheetPreview();
     
@@ -181,13 +189,114 @@ document.addEventListener('DOMContentLoaded', () => {
     promptGridElement.innerHTML = '';
     promptGridElement.style.gridTemplateColumns = `repeat(${currentState.columns}, 1fr)`;
     
+    // Add row headers (if any have style overrides)
+    const hasRowStyles = Object.keys(currentState.rowStyles).length > 0;
+    
+    // Create column headers if needed
+    if (Object.keys(currentState.colStyles).length > 0) {
+      const headerRow = document.createElement('div');
+      headerRow.style.display = 'grid';
+      headerRow.style.gridTemplateColumns = `repeat(${currentState.columns}, 1fr)`;
+      headerRow.style.marginBottom = '10px';
+      
+      // Empty cell for top-left corner if we have row headers
+      if (hasRowStyles) {
+        const cornerCell = document.createElement('div');
+        cornerCell.style.width = '30px';
+        promptGridElement.appendChild(cornerCell);
+      }
+      
+      // Create column headers
+      for (let col = 0; col < currentState.columns; col++) {
+        const colHeader = document.createElement('div');
+        colHeader.className = 'header-col';
+        colHeader.textContent = `Col ${col+1}`;
+        
+        // Add style override indicator
+        if (currentState.colStyles[col]) {
+          const style = currentState.colStyles[col];
+          colHeader.innerHTML += `<span class="header-override-indicator" title="${style.name}">⚙️</span>`;
+          colHeader.title = `Style: ${style.name}\nPrefix: ${style.prefix}\nSuffix: ${style.suffix}`;
+        }
+        
+        headerRow.appendChild(colHeader);
+      }
+      
+      promptGridElement.appendChild(headerRow);
+    }
+    
     for (let row = 0; row < currentState.rows; row++) {
+      // Add row header if needed
+      if (hasRowStyles) {
+        const rowHeader = document.createElement('div');
+        rowHeader.className = 'header-row';
+        rowHeader.textContent = `Row ${row+1}`;
+        
+        // Add style override indicator
+        if (currentState.rowStyles[row]) {
+          const style = currentState.rowStyles[row];
+          rowHeader.innerHTML += `<span class="header-override-indicator" title="${style.name}">⚙️</span>`;
+          rowHeader.title = `Style: ${style.name}\nPrefix: ${style.prefix}\nSuffix: ${style.suffix}`;
+        }
+        
+        promptGridElement.appendChild(rowHeader);
+      }
+      
       for (let col = 0; col < currentState.columns; col++) {
         const cellIndex = row * currentState.columns + col;
         const cell = currentState.cells[cellIndex];
         
         const cellElement = document.createElement('div');
         cellElement.className = 'grid-cell prompt-cell';
+        
+        // Add classes if this cell is in a row or column with a style override
+        if (currentState.rowStyles[row]) {
+          cellElement.classList.add('row-style-highlight');
+        }
+        if (currentState.colStyles[col]) {
+          cellElement.classList.add('col-style-highlight');
+        }
+        if (currentState.rowStyles[row] || currentState.colStyles[col]) {
+          cellElement.classList.add('overridden-cell');
+          
+          // Create tooltip for style override info
+          const tooltip = document.createElement('div');
+          tooltip.className = 'override-tooltip';
+          
+          let tooltipContent = '<div class="tooltip-style-name">Style Overrides</div>';
+          
+          if (currentState.rowStyles[row]) {
+            const rowStyle = currentState.rowStyles[row];
+            tooltipContent += `
+              <div class="tooltip-style-content">
+                <div class="tooltip-style-label">Row ${row+1} Style: ${rowStyle.name}</div>
+                <div class="tooltip-style-text">Prefix: ${rowStyle.prefix}</div>
+                <div class="tooltip-style-text">Suffix: ${rowStyle.suffix}</div>
+              </div>
+            `;
+          }
+          
+          if (currentState.colStyles[col]) {
+            const colStyle = currentState.colStyles[col];
+            tooltipContent += `
+              <div class="tooltip-style-content">
+                <div class="tooltip-style-label">Column ${col+1} Style: ${colStyle.name}</div>
+                <div class="tooltip-style-text">Prefix: ${colStyle.prefix}</div>
+                <div class="tooltip-style-text">Suffix: ${colStyle.suffix}</div>
+              </div>
+            `;
+          }
+          
+          tooltip.innerHTML = tooltipContent;
+          cellElement.appendChild(tooltip);
+          
+          // Add override indicator
+          const indicator = document.createElement('div');
+          indicator.className = 'override-indicator';
+          indicator.textContent = '⚙️ Style';
+          cellElement.appendChild(indicator);
+        }
+        
         cellElement.dataset.row = row;
         cellElement.dataset.col = col;
         cellElement.dataset.index = cellIndex;
@@ -316,10 +425,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event handlers
   function handleUpdateGrid() {
-    // Save existing cell data before updating grid
+    // Save existing cell data and style overrides before updating grid
     const oldCells = [...currentState.cells];
     const oldRows = currentState.rows;
     const oldColumns = currentState.columns;
+    const oldRowStyles = {...currentState.rowStyles};
+    const oldColStyles = {...currentState.colStyles};
     
     createGrids();
     updateDownloadResolutionInfo();
@@ -336,8 +447,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
       
+      // Restore row style overrides that still exist
+      currentState.rowStyles = {};
+      for (const row in oldRowStyles) {
+        if (row < currentState.rows) {
+          currentState.rowStyles[row] = oldRowStyles[row];
+        }
+      }
+      
+      // Restore column style overrides that still exist
+      currentState.colStyles = {};
+      for (const col in oldColStyles) {
+        if (col < currentState.columns) {
+          currentState.colStyles[col] = oldColStyles[col];
+        }
+      }
+      
       // Update the prompt grid to show the restored values
       createPromptGrid();
+      
+      // Update the row/column style override lists
+      createRowStyleOverridesList();
+      createColStyleOverridesList();
     }
   }
 
@@ -460,8 +591,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function generateCell(cellIndex, updateUI = true) {
     const cell = currentState.cells[cellIndex];
-    const prefix = prefixPromptInput.value.trim();
-    const suffix = suffixPromptInput.value.trim();
+    const row = cell.row;
+    const col = cell.col;
+    
+    // Get default prefix and suffix
+    let prefix = prefixPromptInput.value.trim();
+    let suffix = suffixPromptInput.value.trim();
+    
+    // Apply row style overrides
+    if (currentState.rowStyles[row]) {
+      prefix = (currentState.rowStyles[row].prefix + " " + prefix).trim();
+      suffix = (suffix + " " + currentState.rowStyles[row].suffix).trim();
+    }
+    
+    // Apply column style overrides
+    if (currentState.colStyles[col]) {
+      prefix = (currentState.colStyles[col].prefix + " " + prefix).trim();
+      suffix = (suffix + " " + currentState.colStyles[col].suffix).trim();
+    }
+    
     const prompt = `${prefix} ${cell.prompt.trim()} ${suffix}`.trim();
     
     // Update cell state
@@ -721,10 +869,16 @@ document.addEventListener('DOMContentLoaded', () => {
     prefixPromptInput.value = '';
     suffixPromptInput.value = '';
     
+    // Reset style overrides
+    currentState.rowStyles = {};
+    currentState.colStyles = {};
+    
     // Reset UI
     createPromptGrid();
     createImageGrid();
     updateSpritesheetPreview();
+    createRowStyleOverridesList();
+    createColStyleOverridesList();
     
     // Disable download button
     downloadBtn.disabled = true;
@@ -1132,24 +1286,235 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function showAlert(message, type = 'info') {
-    const alertElement = document.createElement('div');
-    alertElement.className = `alert-message ${type}`;
-    alertElement.textContent = message;
-    document.body.appendChild(alertElement);
-  
-    // Show the alert
-    setTimeout(() => {
-      alertElement.classList.add('show');
-    }, 10);
-  
-    // Remove after a delay
-    setTimeout(() => {
-      alertElement.classList.remove('show');
-      setTimeout(() => {
-        document.body.removeChild(alertElement);
-      }, 300);
-    }, 3000);
+  function initializeStyleOverrides() {
+    createRowStyleOverridesList();
+    createColStyleOverridesList();
+  }
+
+  function createRowStyleOverridesList() {
+    if (!rowStyleOverridesList) return;
+    
+    rowStyleOverridesList.innerHTML = '';
+    
+    for (let row = 0; row < currentState.rows; row++) {
+      const overrideItem = document.createElement('div');
+      overrideItem.className = 'style-override-item';
+      
+      const label = document.createElement('div');
+      label.className = 'style-override-label';
+      label.textContent = `Row ${row + 1}:`;
+      
+      const select = document.createElement('select');
+      select.className = 'style-override-select';
+      select.dataset.row = row;
+      
+      // Add empty option
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = '-- No style override --';
+      select.appendChild(emptyOption);
+      
+      // Get all saved styles
+      const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+      
+      // Add each style as an option
+      Object.keys(savedStyles).forEach(styleName => {
+        const option = document.createElement('option');
+        option.value = styleName;
+        option.textContent = styleName;
+        select.appendChild(option);
+      });
+      
+      // Set selected value if this row has a style override
+      if (currentState.rowStyles[row]) {
+        select.value = currentState.rowStyles[row].name;
+      }
+      
+      // Add change event
+      select.addEventListener('change', (e) => {
+        const rowIndex = parseInt(e.target.dataset.row);
+        const styleName = e.target.value;
+        
+        if (styleName) {
+          // Apply style override
+          const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+          if (savedStyles[styleName]) {
+            currentState.rowStyles[rowIndex] = {
+              name: styleName,
+              prefix: savedStyles[styleName].prefix || '',
+              suffix: savedStyles[styleName].suffix || ''
+            };
+            
+            // Update style info
+            if (e.target.nextElementSibling && e.target.nextElementSibling.classList.contains('style-info')) {
+              e.target.nextElementSibling.innerHTML = `<span class="style-info-icon" title="Prefix: ${savedStyles[styleName].prefix}\nSuffix: ${savedStyles[styleName].suffix}">ℹ️</span> Applied "${styleName}" style to Row ${rowIndex + 1}`;
+            } else {
+              const styleInfo = document.createElement('div');
+              styleInfo.className = 'style-info';
+              styleInfo.innerHTML = `<span class="style-info-icon" title="Prefix: ${savedStyles[styleName].prefix}\nSuffix: ${savedStyles[styleName].suffix}">ℹ️</span> Applied "${styleName}" style to Row ${rowIndex + 1}`;
+              overrideItem.appendChild(styleInfo);
+            }
+          }
+        } else {
+          // Remove style override
+          delete currentState.rowStyles[rowIndex];
+          
+          // Remove style info
+          if (e.target.nextElementSibling && e.target.nextElementSibling.classList.contains('style-info')) {
+            e.target.nextElementSibling.remove();
+          }
+        }
+        
+        // Update grid to reflect changes
+        createPromptGrid();
+      });
+      
+      // Add clear button
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'style-clear-btn';
+      clearBtn.textContent = '✕';
+      clearBtn.title = 'Clear style override';
+      clearBtn.addEventListener('click', () => {
+        delete currentState.rowStyles[row];
+        select.value = '';
+        
+        // Remove style info
+        if (select.nextElementSibling && select.nextElementSibling.classList.contains('style-info')) {
+          select.nextElementSibling.remove();
+        }
+        
+        // Update grid
+        createPromptGrid();
+      });
+      
+      overrideItem.appendChild(label);
+      overrideItem.appendChild(select);
+      overrideItem.appendChild(clearBtn);
+      
+      // Add style info if this row has a style override
+      if (currentState.rowStyles[row]) {
+        const style = currentState.rowStyles[row];
+        const styleInfo = document.createElement('div');
+        styleInfo.className = 'style-info';
+        styleInfo.innerHTML = `<span class="style-info-icon" title="Prefix: ${style.prefix}\nSuffix: ${style.suffix}">ℹ️</span> Applied "${style.name}" style to Row ${row + 1}`;
+        overrideItem.appendChild(styleInfo);
+      }
+      
+      rowStyleOverridesList.appendChild(overrideItem);
+    }
+  }
+
+  function createColStyleOverridesList() {
+    if (!colStyleOverridesList) return;
+    
+    colStyleOverridesList.innerHTML = '';
+    
+    for (let col = 0; col < currentState.columns; col++) {
+      const overrideItem = document.createElement('div');
+      overrideItem.className = 'style-override-item';
+      
+      const label = document.createElement('div');
+      label.className = 'style-override-label';
+      label.textContent = `Column ${col + 1}:`;
+      
+      const select = document.createElement('select');
+      select.className = 'style-override-select';
+      select.dataset.col = col;
+      
+      // Add empty option
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = '-- No style override --';
+      select.appendChild(emptyOption);
+      
+      // Get all saved styles
+      const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+      
+      // Add each style as an option
+      Object.keys(savedStyles).forEach(styleName => {
+        const option = document.createElement('option');
+        option.value = styleName;
+        option.textContent = styleName;
+        select.appendChild(option);
+      });
+      
+      // Set selected value if this column has a style override
+      if (currentState.colStyles[col]) {
+        select.value = currentState.colStyles[col].name;
+      }
+      
+      // Add change event
+      select.addEventListener('change', (e) => {
+        const colIndex = parseInt(e.target.dataset.col);
+        const styleName = e.target.value;
+        
+        if (styleName) {
+          // Apply style override
+          const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+          if (savedStyles[styleName]) {
+            currentState.colStyles[colIndex] = {
+              name: styleName,
+              prefix: savedStyles[styleName].prefix || '',
+              suffix: savedStyles[styleName].suffix || ''
+            };
+            
+            // Update style info
+            if (e.target.nextElementSibling && e.target.nextElementSibling.classList.contains('style-info')) {
+              e.target.nextElementSibling.innerHTML = `<span class="style-info-icon" title="Prefix: ${savedStyles[styleName].prefix}\nSuffix: ${savedStyles[styleName].suffix}">ℹ️</span> Applied "${styleName}" style to Column ${colIndex + 1}`;
+            } else {
+              const styleInfo = document.createElement('div');
+              styleInfo.className = 'style-info';
+              styleInfo.innerHTML = `<span class="style-info-icon" title="Prefix: ${savedStyles[styleName].prefix}\nSuffix: ${savedStyles[styleName].suffix}">ℹ️</span> Applied "${styleName}" style to Column ${colIndex + 1}`;
+              overrideItem.appendChild(styleInfo);
+            }
+          }
+        } else {
+          // Remove style override
+          delete currentState.colStyles[colIndex];
+          
+          // Remove style info
+          if (e.target.nextElementSibling && e.target.nextElementSibling.classList.contains('style-info')) {
+            e.target.nextElementSibling.remove();
+          }
+        }
+        
+        // Update grid to reflect changes
+        createPromptGrid();
+      });
+      
+      // Add clear button
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'style-clear-btn';
+      clearBtn.textContent = '✕';
+      clearBtn.title = 'Clear style override';
+      clearBtn.addEventListener('click', () => {
+        delete currentState.colStyles[col];
+        select.value = '';
+        
+        // Remove style info
+        if (select.nextElementSibling && select.nextElementSibling.classList.contains('style-info')) {
+          select.nextElementSibling.remove();
+        }
+        
+        // Update grid
+        createPromptGrid();
+      });
+      
+      overrideItem.appendChild(label);
+      overrideItem.appendChild(select);
+      overrideItem.appendChild(clearBtn);
+      
+      // Add style info if this column has a style override
+      if (currentState.colStyles[col]) {
+        const style = currentState.colStyles[col];
+        const styleInfo = document.createElement('div');
+        styleInfo.className = 'style-info';
+        styleInfo.innerHTML = `<span class="style-info-icon" title="Prefix: ${style.prefix}\nSuffix: ${style.suffix}">ℹ️</span> Applied "${style.name}" style to Column ${col + 1}`;
+        overrideItem.appendChild(styleInfo);
+      }
+      
+      colStyleOverridesList.appendChild(overrideItem);
+    }
   }
 
   // Sprite coordinate export functions
@@ -1394,5 +1759,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Show feedback
     showAlert('Grid populated with content', 'success');
+  }
+  
+  function showAlert(message, type = 'info') {
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert-message ${type}`;
+    alertElement.textContent = message;
+    document.body.appendChild(alertElement);
+  
+    // Show the alert
+    setTimeout(() => {
+      alertElement.classList.add('show');
+    }, 10);
+  
+    // Remove after a delay
+    setTimeout(() => {
+      alertElement.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(alertElement);
+      }, 300);
+    }, 3000);
   }
 });

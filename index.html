@@ -26,28 +26,28 @@
           <div class="step-number">2</div>
           <div class="step-content">
             <h3>Set Up Your Prompts</h3>
-            <p>Either load a preset, enter your own prompts, or use a combination of both.</p>
+            <p>Either load a preset, enter your own prompts, or use a combination.</p>
           </div>
         </div>
         <div class="tutorial-step">
           <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Apply Style Overrides</h3>
+            <p>Customize styles for specific rows or columns for even more variety.</p>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="step-number">4</div>
           <div class="step-content">
             <h3>Generate Images</h3>
             <p>Click "Generate All Images" to create AI-generated sprites for each cell.</p>
           </div>
         </div>
         <div class="tutorial-step">
-          <div class="step-number">4</div>
-          <div class="step-content">
-            <h3>Refine Your Spritesheet</h3>
-            <p>Remove backgrounds if needed for transparent PNGs.</p>
-          </div>
-        </div>
-        <div class="tutorial-step">
           <div class="step-number">5</div>
           <div class="step-content">
-            <h3>Export & Download</h3>
-            <p>Download your spritesheet and export sprite data for your project.</p>
+            <h3>Refine & Export</h3>
+            <p>Remove backgrounds and download your finished spritesheet.</p>
           </div>
         </div>
       </div>
@@ -90,6 +90,7 @@
           <button class="tab-button active" data-tab="presets">Quick Presets</button>
           <button class="tab-button" data-tab="manual">Manual Entry</button>
           <button class="tab-button" data-tab="saved">Saved Configurations</button>
+          <button class="tab-button" data-tab="rowcol">Row & Column Styles</button>
         </div>
         
         <div class="tab-content active" id="presets-tab">
@@ -167,12 +168,42 @@
             </div>
           </div>
         </div>
+        
+        <div class="tab-content" id="rowcol-tab">
+          <div class="row-col-style-container">
+            <div class="style-section">
+              <h3>Row Style Overrides</h3>
+              <div id="rowStyleOverrides" class="style-overrides-list"></div>
+            </div>
+            <div class="style-section">
+              <h3>Column Style Overrides</h3>
+              <div id="colStyleOverrides" class="style-overrides-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="defaultStyle" class="numbered-section">
+      <div class="section-header">
+        <div class="section-number">3</div>
+        <h2>Default Style</h2>
+      </div>
+      <div class="default-style-container">
+        <div class="input-group full-width">
+          <label for="prefixPrompt">Prefix Prompt:</label>
+          <textarea id="prefixPrompt" placeholder="Enter text to prepend to all prompts (e.g., 'pixel art character')"></textarea>
+        </div>
+        <div class="input-group full-width">
+          <label for="suffixPrompt">Suffix Prompt:</label>
+          <textarea id="suffixPrompt" placeholder="Enter text to append to all prompts (e.g., 'top-down view, 16-bit style')"></textarea>
+        </div>
       </div>
     </section>
 
     <section id="gridContainer" class="numbered-section">
       <div class="section-header">
-        <div class="section-number">3</div>
+        <div class="section-number">4</div>
         <h2>Cell Editor</h2>
       </div>
       <div class="grids-wrapper">
@@ -193,7 +224,7 @@
 
     <section id="backgroundRemover" class="numbered-section">
       <div class="section-header">
-        <div class="section-number">4</div>
+        <div class="section-number">5</div>
         <h2>Background Removal</h2>
       </div>
       <p>Remove backgrounds from your spritesheet to create transparent PNGs.</p>
@@ -218,7 +249,7 @@
 
     <section id="spritesheet" class="numbered-section">
       <div class="section-header">
-        <div class="section-number">5</div>
+        <div class="section-number">6</div>
         <h2>Spritesheet Export</h2>
       </div>
       <div id="spritesheetPreview">
@@ -237,7 +268,7 @@
     
     <section id="exportData" class="numbered-section">
       <div class="section-header">
-        <div class="section-number">6</div>
+        <div class="section-number">7</div>
         <h2>Export Sprite Data</h2>
       </div>
       <p>Generate JavaScript code for using your spritesheet in your projects.</p>
