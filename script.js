@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const styleDetailCloseBtn = document.getElementById('styleDetailClose');
 
   // State
-  let currentState = {
+  window.currentState = {
     rows: 2,
     columns: 2,
     cellWidth: 1024,
@@ -70,13 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
     columnStyleOverrides: {}, // For storing per-column style overrides
     styleOverrides: {} // For tracking all named style overrides
   };
-  
+
   // Initialize the UI
   import('./modules/tabs.js').then(module => {
     window.initializeTabs = module.initializeTabs;
     initializeTabs();
   });
-  
+
   import('./modules/grid.js').then(module => {
     window.createGrids = module.createGrids;
     window.handleUpdateGrid = module.handleUpdateGrid;
@@ -86,11 +86,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.createImageGrid = module.createImageGrid;
     window.highlightCells = module.highlightCells;
     window.unhighlightCells = module.unhighlightCells;
-    
+
     // Initialize with imported functions
     createGrids();
   });
-  
+
   import('./modules/imageGeneration.js').then(module => {
     window.handleGenerateCell = module.handleGenerateCell;
     window.generateCell = module.generateCell;
@@ -101,40 +101,40 @@ document.addEventListener('DOMContentLoaded', () => {
     window.resetAll = module.resetAll;
     window.getFullPromptForCell = module.getFullPromptForCell;
   });
-  
+
   import('./modules/spritesheet.js').then(module => {
     window.updateSpritesheetPreview = module.updateSpritesheetPreview;
     window.handleDownload = module.handleDownload;
     window.downloadSpritesheet = module.downloadSpritesheet;
     window.updateDownloadResolutionInfo = module.updateDownloadResolutionInfo;
-    
+
     // Initialize with imported functions
     updateDownloadResolutionInfo();
   });
-  
+
   import('./modules/styleOverrides.js').then(module => {
     window.updateRowColumnStyleOverrides = module.updateRowColumnStyleOverrides;
     window.createRowStyleOverridesUI = module.createRowStyleOverridesUI;
     window.createColumnStyleOverridesUI = module.createColumnStyleOverridesUI;
     window.showStyleDetails = module.showStyleDetails;
-    
+
     // Initialize with imported functions
     updateRowColumnStyleOverrides();
   });
-  
+
   import('./modules/background.js').then(module => {
     window.handleColorChange = module.handleColorChange;
     window.handleHexInput = module.handleHexInput;
     window.useCommonColor = module.useCommonColor;
     window.removeBackground = module.removeBackground;
   });
-  
+
   import('./modules/export.js').then(module => {
     window.generateCoordsSnippet = module.generateCoordsSnippet;
     window.generateBoundingBoxesSnippet = module.generateBoundingBoxesSnippet;
     window.copyOutputToClipboard = module.copyOutputToClipboard;
   });
-  
+
   import('./modules/presets.js').then(module => {
     window.initializeDropdowns = module.initializeDropdowns;
     window.updateSavedStylesSelect = module.updateSavedStylesSelect;
@@ -145,11 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.loadStyle = module.loadStyle;
     window.saveContent = module.saveContent;
     window.loadContent = module.loadContent;
-    
+
     // Initialize with imported functions
     initializeDropdowns();
   });
-  
+
   import('./modules/ui.js').then(module => {
     window.showConfirmation = module.showConfirmation;
     window.handleConfirmation = module.handleConfirmation;
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.showAlert = module.showAlert;
     window.toggleTheme = module.toggleTheme;
     window.initTheme = module.initTheme;
-    
+
     // Initialize with imported functions
     initTheme();
   });
@@ -184,11 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
   generateBoundingBoxesBtn.addEventListener('click', () => window.generateBoundingBoxesSnippet());
   copyToClipboardBtn.addEventListener('click', () => window.copyOutputToClipboard());
   downloadScaleInput.addEventListener('input', () => window.updateDownloadResolutionInfo());
-  
+
   // Theme toggle
   const themeToggleBtn = document.getElementById('themeToggle');
   themeToggleBtn.addEventListener('click', () => window.toggleTheme());
-  
+
   // Add event listener for style detail modal close button
   if (styleDetailCloseBtn) {
     styleDetailCloseBtn.addEventListener('click', () => window.hideModal(styleDetailModal));
