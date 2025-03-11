@@ -141,6 +141,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const themeToggleBtn = document.getElementById('themeToggle');
   themeToggleBtn.addEventListener('click', toggleTheme);
 
+  function toggleTheme() {
+    currentState.darkMode = !currentState.darkMode;
+    document.body.classList.toggle('dark-mode', currentState.darkMode);
+    localStorage.setItem('darkMode', currentState.darkMode ? 'true' : 'false');
+    
+    const themeToggleBtn = document.getElementById('themeToggle');
+    themeToggleBtn.innerHTML = currentState.darkMode ? '☀️' : '🌙';
+  }
+  
+  function initTheme() {
+    // Check for saved theme preference
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    
+    // Set the theme based on saved preference
+    currentState.darkMode = savedDarkMode;
+    document.body.classList.toggle('dark-mode', currentState.darkMode);
+    
+    // Update toggle button
+    const themeToggleBtn = document.getElementById('themeToggle');
+    if (themeToggleBtn) {
+      themeToggleBtn.innerHTML = currentState.darkMode ? '☀️' : '🌙';
+    }
+  }
+
   // Functions to create and manage the grids
   function createGrids() {
     const rows = parseInt(rowsInput.value);
@@ -444,7 +468,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ... existing code ...
 
-  // Functions for row/column style overrides
   function updateRowColumnStyleOverrides() {
     createRowStyleOverridesUI();
     createColumnStyleOverridesUI();
