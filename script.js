@@ -1246,4 +1246,103 @@ document.addEventListener('DOMContentLoaded', () => {
   function showModal(modal) {
     modal.style.display = 'flex';
   }
+
+  function generateCoordsSnippet() {
+    const scale = applyScaleToExportCheckbox.checked ? parseFloat(downloadScaleInput.value) || 1.0 : 1.0;
+    const cellWidth = Math.round(currentState.cellWidth * scale);
+    const cellHeight = Math.round(currentState.cellHeight * scale);
+    
+    let code = `// Spritesheet coordinates for ${currentState.rows}x${currentState.columns} grid\n`;
+    code += `const SPRITE_WIDTH = ${cellWidth};\n`;
+    code += `const SPRITE_HEIGHT = ${cellHeight};\n\n`;
+    code += `const sprites = {\n`;
+    
+    const cells = [];
+    
+    for (let row = 0; row < currentState.rows; row++) {
+      for (let col = 0; col < currentState.columns; col++) {
+        const cellIndex = row * currentState.columns + col;
+        const cell = currentState.cells[cellIndex];
+        
+        if (cell.imageUrl) {
+          const name = cell.prompt.trim().replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+          const x = col * cellWidth;
+          const y = row * cellHeight;
+          
+          cells.push(`  "${name || `sprite_${row}_${col}`}": { x: ${x}, y: ${y}, width: ${cellWidth}, height: ${cellHeight} }`);
+        }
+      }
+    }
+    
+    code += cells.join(',\n');
+    code += `\n};\n\n`;
+    code += `// Usage example:\n`;
+    code += `// ctx.drawImage(spritesheet, sprites.sprite_name.x, sprites.sprite_name.y, sprites.sprite_name.width, sprites.sprite_name.height, 0, 0, sprites.sprite_name.width, sprites.sprite_name.height);`;
+    
+    coordsOutput.value = code;
+  }
+  
+  function generateBoundingBoxesSnippet() {
+    const scale = applyScaleToExportCheckbox.checked ? parseFloat(downloadScaleInput.value) || 1.0 : 1.0;
+    const cellWidth = Math.round(currentState.cellWidth * scale);
+    const cellHeight = Math.round(currentState.cellHeight * scale);
+    
+    let code = `// Spritesheet bounding boxes for ${currentState.rows}x${currentState.columns} grid\n`;
+    code += `const SPRITESHEET_WIDTH = ${currentState.columns * cellWidth};\n`;
+    code += `const SPRITESHEET_HEIGHT = ${currentState.rows * cellHeight};\n\n`;
+    code += `const spriteBoundingBoxes = [\n`;
+    
+    const boxes = [];
+    
+    for (let row = 0; row < currentState.rows; row++) {
+      for (let col = 0; col < currentState.columns; col++) {
+        const cellIndex = row * currentState.columns + col;
+        const cell = currentState.cells[cellIndex];
+        
+        if (cell.imageUrl) {
+          const name = cell.prompt.trim().replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+          const x = col * cellWidth;
+          const y = row * cellHeight;
+          
+          boxes.push(`  { 
+    name: "${name || `sprite_${row}_${col}`}",
+    x: ${x}, 
+    y: ${y}, 
+    width: ${cellWidth}, 
+    height: ${cellHeight},
+    row: ${row},
+    column: ${col}
+  }`);
+        }
+      }
+    }
+    
+    code += boxes.join(',\n');
+    code += `\n];\n\n`;
+    code += `// Usage example:\n`;
+    code += `// const sprite = spriteBoundingBoxes.find(box => box.name === 'sprite_name');\n`;
+    code += `// ctx.drawImage(spritesheet, sprite.x, sprite.y, sprite.width, sprite.height, 0, 0, sprite.width, sprite.height);`;
+    
+    coordsOutput.value = code;
+  }
+  
+  function copyOutputToClipboard() {
+    if (coordsOutput.value) {
+      coordsOutput.select();
+      document.execCommand('copy');
+      
+      showAlert('Code copied to clipboard!', 'success');
+    } else {
+      showError('No code to copy!');
+    }
+  }
+  
+  function showConfirmation(title, message, callback) {
+    confirmationTitle.textContent = title;
+    confirmationMessage.textContent = message;
+    confirmationModal.style.display = 'flex';
+    
+    // Store the callback for when user confirms
+    confirmationModal.dataset.callback = callback.name;
+  }
 });
