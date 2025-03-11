@@ -166,9 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event Listeners
   updateGridBtn.addEventListener('click', () => window.handleUpdateGrid());
-  generateAllBtn.addEventListener('click', handleGenerateAll);
-  resetAllBtn.addEventListener('click', handleResetAll);
-  downloadBtn.addEventListener('click', handleDownload);
+  generateAllBtn.addEventListener('click', () => window.handleGenerateAll());
+  resetAllBtn.addEventListener('click', () => window.handleResetAll());
+  downloadBtn.addEventListener('click', () => window.handleDownload());
   confirmYesBtn.addEventListener('click', handleConfirmation);
   confirmNoBtn.addEventListener('click', () => hideModal(confirmationModal));
   updatePreviewBtn.addEventListener('click', updateSpritesheetPreview);
