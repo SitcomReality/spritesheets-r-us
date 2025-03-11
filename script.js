@@ -169,28 +169,28 @@ document.addEventListener('DOMContentLoaded', () => {
   generateAllBtn.addEventListener('click', () => window.handleGenerateAll());
   resetAllBtn.addEventListener('click', () => window.handleResetAll());
   downloadBtn.addEventListener('click', () => window.handleDownload());
-  confirmYesBtn.addEventListener('click', handleConfirmation);
-  confirmNoBtn.addEventListener('click', () => hideModal(confirmationModal));
-  updatePreviewBtn.addEventListener('click', updateSpritesheetPreview);
-  colorToRemoveInput.addEventListener('change', handleColorChange);
-  colorHexInput.addEventListener('input', handleHexInput);
-  useCommonColorBtn.addEventListener('click', useCommonColor);
-  removeWithToleranceBtn.addEventListener('click', () => removeBackground(true));
-  saveStyleBtn.addEventListener('click', saveStyle);
-  loadStyleBtn.addEventListener('click', loadStyle);
-  saveContentBtn.addEventListener('click', saveContent);
-  loadContentBtn.addEventListener('click', loadContent);
-  generateCoordsBtn.addEventListener('click', generateCoordsSnippet);
-  generateBoundingBoxesBtn.addEventListener('click', generateBoundingBoxesSnippet);
-  copyToClipboardBtn.addEventListener('click', copyOutputToClipboard);
-  downloadScaleInput.addEventListener('input', updateDownloadResolutionInfo);
+  confirmYesBtn.addEventListener('click', () => window.handleConfirmation());
+  confirmNoBtn.addEventListener('click', () => window.hideModal(confirmationModal));
+  updatePreviewBtn.addEventListener('click', () => window.updateSpritesheetPreview());
+  colorToRemoveInput.addEventListener('change', (e) => window.handleColorChange(e));
+  colorHexInput.addEventListener('input', (e) => window.handleHexInput(e));
+  useCommonColorBtn.addEventListener('click', () => window.useCommonColor());
+  removeWithToleranceBtn.addEventListener('click', () => window.removeBackground(true));
+  saveStyleBtn.addEventListener('click', () => window.saveStyle());
+  loadStyleBtn.addEventListener('click', () => window.loadStyle());
+  saveContentBtn.addEventListener('click', () => window.saveContent());
+  loadContentBtn.addEventListener('click', () => window.loadContent());
+  generateCoordsBtn.addEventListener('click', () => window.generateCoordsSnippet());
+  generateBoundingBoxesBtn.addEventListener('click', () => window.generateBoundingBoxesSnippet());
+  copyToClipboardBtn.addEventListener('click', () => window.copyOutputToClipboard());
+  downloadScaleInput.addEventListener('input', () => window.updateDownloadResolutionInfo());
   
   // Theme toggle
   const themeToggleBtn = document.getElementById('themeToggle');
-  themeToggleBtn.addEventListener('click', toggleTheme);
+  themeToggleBtn.addEventListener('click', () => window.toggleTheme());
   
   // Add event listener for style detail modal close button
   if (styleDetailCloseBtn) {
-    styleDetailCloseBtn.addEventListener('click', () => hideModal(styleDetailModal));
+    styleDetailCloseBtn.addEventListener('click', () => window.hideModal(styleDetailModal));
   }
 });
