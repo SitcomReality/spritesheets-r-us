@@ -6,45 +6,29 @@ function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
   const globalPrefix = prefixPromptInput.value.trim();
   const globalSuffix = suffixPromptInput.value.trim();
   
-  console.log("Current state rowStyleOverrides:", window.currentState.rowStyleOverrides);
-  console.log("Current state columnStyleOverrides:", window.currentState.columnStyleOverrides);
-  console.log(`Looking for override at rowIndex=${rowIndex}, colIndex=${colIndex}`);
-  console.log("Full state.rowStyleOverrides:", JSON.stringify(window.currentState.rowStyleOverrides));
-  console.log("Full state.columnStyleOverrides:", JSON.stringify(window.currentState.columnStyleOverrides));
-  
   const rowOverride = window.currentState.rowStyleOverrides[rowIndex] || null;
   const colOverride = window.currentState.columnStyleOverrides[colIndex] || null;
-  
-  console.log(`Cell (${rowIndex+1},${colIndex+1}) - Checking for overrides:`);
-  console.log(`Row override exists: ${!!rowOverride}`, rowOverride);
-  console.log(`Column override exists: ${!!colOverride}`, colOverride);
-  console.log(`Row override typeof: ${typeof window.currentState.rowStyleOverrides[rowIndex]}`);
-  console.log(`Column override typeof: ${typeof window.currentState.columnStyleOverrides[colIndex]}`);
   
   let prefixToUse = globalPrefix;
   let suffixToUse = globalSuffix;
   
   // Apply row override prefix if it exists
   if (rowOverride && rowOverride.prefix) {
-    console.log(`Applying row ${rowIndex+1} prefix override: "${rowOverride.prefix}"`);
     prefixToUse = rowOverride.prefix.trim();
   }
   
   // Apply column override prefix if it exists (column overrides take precedence over row)
   if (colOverride && colOverride.prefix) {
-    console.log(`Applying column ${colIndex+1} prefix override: "${colOverride.prefix}"`);
     prefixToUse = colOverride.prefix.trim();
   }
   
   // Apply row override suffix if it exists
   if (rowOverride && rowOverride.suffix) {
-    console.log(`Applying row ${rowIndex+1} suffix override: "${rowOverride.suffix}"`);
     suffixToUse = rowOverride.suffix.trim();
   }
   
   // Apply column override suffix if it exists (column overrides take precedence over row)
   if (colOverride && colOverride.suffix) {
-    console.log(`Applying column ${colIndex+1} suffix override: "${colOverride.suffix}"`);
     suffixToUse = colOverride.suffix.trim();
   }
   
@@ -54,18 +38,19 @@ function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
   finalPrompt += cellPrompt.trim();
   if (suffixToUse) finalPrompt += ` ${suffixToUse}`;
   
-  console.log(`Final prompt for cell (${rowIndex+1},${colIndex+1}): "${finalPrompt}"`);
-  
   return finalPrompt.trim();
 }
 
 function handleGenerateCell(cellIndex) {
   // Show confirmation for single cell generation
   if (window.currentState.cells[cellIndex].imageUrl) {
+    const confirmationModal = document.getElementById('confirmationModal');
+    confirmationModal.dataset.cellIndex = cellIndex;
+    
     window.showConfirmation(
       "Regenerate Image",
       "Are you sure you want to regenerate this image?",
-      () => generateCell(cellIndex)
+      generateCell
     );
   } else {
     generateCell(cellIndex);
