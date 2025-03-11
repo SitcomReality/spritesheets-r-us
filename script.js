@@ -60,6 +60,25 @@ document.addEventListener('DOMContentLoaded', () => {
     backgroundRemoved: false // Track if background removal has been applied
   };
 
+  // Initialize tabs
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // Remove active class from all buttons and contents
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+      tabContents.forEach(content => content.classList.remove('active'));
+      
+      // Add active class to clicked button
+      button.classList.add('active');
+      
+      // Show corresponding content
+      const tabId = button.getAttribute('data-tab');
+      document.getElementById(`${tabId}-tab`).classList.add('active');
+    });
+  });
+
   // Initialize the grids
   createGrids();
   updateDownloadResolutionInfo();
@@ -1025,6 +1044,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Update the prompt grid to show the new content
     createPromptGrid();
+    
+    // Show feedback
+    showAlert('Grid populated with content', 'success');
   }
   
   function updateStyleDropdown() {

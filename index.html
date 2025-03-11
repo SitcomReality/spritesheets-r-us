@@ -12,8 +12,52 @@
   </header>
 
   <main>
-    <section id="configuration">
-      <h2>Grid Configuration</h2>
+    <section id="tutorial" class="info-section">
+      <h2>How to Create Your Spritesheet</h2>
+      <div class="tutorial-steps">
+        <div class="tutorial-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Configure Your Grid</h3>
+            <p>Set the number of rows and columns for your spritesheet.</p>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Set Up Your Prompts</h3>
+            <p>Either load a preset, enter your own prompts, or use a combination of both.</p>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Generate Images</h3>
+            <p>Click "Generate All Images" to create AI-generated sprites for each cell.</p>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Refine Your Spritesheet</h3>
+            <p>Remove backgrounds if needed for transparent PNGs.</p>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <h3>Export & Download</h3>
+            <p>Download your spritesheet and export sprite data for your project.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="configuration" class="numbered-section">
+      <div class="section-header">
+        <div class="section-number">1</div>
+        <h2>Grid Configuration</h2>
+      </div>
       <div class="config-controls">
         <div class="input-group">
           <label for="rows">Rows:</label>
@@ -35,86 +79,123 @@
       </div>
     </section>
 
-    <section id="prompts">
-      <h2>Prompt Configuration</h2>
-      <div class="save-load-container">
-        <div class="save-input-group">
-          <input type="text" id="styleName" class="save-name-input" placeholder="Style name">
-          <button id="saveStyle" class="secondary-button">Save Style</button>
-          <select id="savedStyles" class="save-name-input">
-            <option value="">-- Select a saved style --</option>
-          </select>
-          <button id="loadStyle" class="secondary-button">Load Style</button>
-        </div>
-        <div class="save-input-group">
-          <input type="text" id="contentName" class="save-name-input" placeholder="Content set name">
-          <button id="saveContent" class="secondary-button">Save Content</button>
-          <select id="savedContents" class="save-name-input">
-            <option value="">-- Select saved content --</option>
-          </select>
-          <button id="loadContent" class="secondary-button">Load Content</button>
-        </div>
+    <section id="prompts" class="numbered-section">
+      <div class="section-header">
+        <div class="section-number">2</div>
+        <h2>Prompt Configuration</h2>
       </div>
-      <div class="global-prompts">
-        <div class="input-group full-width">
-          <label for="prefixPrompt">Prefix Prompt:</label>
-          <textarea id="prefixPrompt" placeholder="Enter text to prepend to all prompts (e.g., 'pixel art character')"></textarea>
+      
+      <div class="prompt-tabs">
+        <div class="tab-buttons">
+          <button class="tab-button active" data-tab="presets">Quick Presets</button>
+          <button class="tab-button" data-tab="manual">Manual Entry</button>
+          <button class="tab-button" data-tab="saved">Saved Configurations</button>
         </div>
-        <div class="input-group full-width">
-          <label for="suffixPrompt">Suffix Prompt:</label>
-          <textarea id="suffixPrompt" placeholder="Enter text to append to all prompts (e.g., 'top-down view, 16-bit style')"></textarea>
-        </div>
-        <div class="suggestion-controls">
-          <div class="input-group">
-            <label for="contentSuggestions">Quick Populate Grid:</label>
-            <select id="contentSuggestions">
-              <option value="">-- Select content type --</option>
-              <option value="characters">Character Archetypes</option>
-              <option value="fantasy">Fantasy Creatures</option>
-              <option value="furniture">Furniture Items</option>
-              <option value="buildings">Building Types</option>
-              <option value="vehicles">Vehicles</option>
-              <option value="animals">Animals</option>
-            </select>
+        
+        <div class="tab-content active" id="presets-tab">
+          <div class="preset-controls">
+            <div class="input-group">
+              <label for="contentSuggestions">Quick Populate Grid:</label>
+              <select id="contentSuggestions">
+                <option value="">-- Select content type --</option>
+                <option value="characters">Character Archetypes</option>
+                <option value="fantasy">Fantasy Creatures</option>
+                <option value="furniture">Furniture Items</option>
+                <option value="buildings">Building Types</option>
+                <option value="vehicles">Vehicles</option>
+                <option value="animals">Animals</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="styleOptions">Apply Art Style:</label>
+              <select id="styleOptions">
+                <option value="">-- Select art style --</option>
+                <option value="pixelArt">Pixel Art</option>
+                <option value="lineart">Minimalist Line Art</option>
+                <option value="papercraft">Papercraft Cutout</option>
+                <option value="voxel">Voxel 3D</option>
+                <option value="neonPastel">Neon-Pastel Pop Art</option>
+                <option value="watercolor">Watercolor Painting</option>
+                <option value="retro3D">Retro 3D (PS1 style)</option>
+                <option value="cute">Cute Chibi Characters</option>
+              </select>
+            </div>
           </div>
-          <div class="input-group">
-            <label for="styleOptions">Apply Style:</label>
-            <select id="styleOptions">
-              <option value="">-- Select art style --</option>
-              <option value="pixelArt">Pixel Art</option>
-              <option value="lineart">Minimalist Line Art</option>
-              <option value="papercraft">Papercraft Cutout</option>
-              <option value="voxel">Voxel 3D</option>
-              <option value="neonPastel">Neon-Pastel Pop Art</option>
-              <option value="watercolor">Watercolor Painting</option>
-              <option value="retro3D">Retro 3D (PS1 style)</option>
-              <option value="cute">Cute Chibi Characters</option>
-            </select>
+        </div>
+        
+        <div class="tab-content" id="manual-tab">
+          <div class="global-prompts">
+            <div class="input-group full-width">
+              <label for="prefixPrompt">Prefix Prompt:</label>
+              <textarea id="prefixPrompt" placeholder="Enter text to prepend to all prompts (e.g., 'pixel art character')"></textarea>
+            </div>
+            <div class="input-group full-width">
+              <label for="suffixPrompt">Suffix Prompt:</label>
+              <textarea id="suffixPrompt" placeholder="Enter text to append to all prompts (e.g., 'top-down view, 16-bit style')"></textarea>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tab-content" id="saved-tab">
+          <div class="save-load-container">
+            <div class="save-load-section">
+              <h3>Style Configurations</h3>
+              <div class="save-input-group">
+                <input type="text" id="styleName" class="save-name-input" placeholder="Name your style">
+                <button id="saveStyle" class="secondary-button">Save Style</button>
+              </div>
+              <div class="save-input-group">
+                <select id="savedStyles" class="save-name-input">
+                  <option value="">-- Select a saved style --</option>
+                </select>
+                <button id="loadStyle" class="secondary-button">Load Style</button>
+              </div>
+            </div>
+            
+            <div class="save-load-section">
+              <h3>Content Sets</h3>
+              <div class="save-input-group">
+                <input type="text" id="contentName" class="save-name-input" placeholder="Name your content set">
+                <button id="saveContent" class="secondary-button">Save Content</button>
+              </div>
+              <div class="save-input-group">
+                <select id="savedContents" class="save-name-input">
+                  <option value="">-- Select saved content --</option>
+                </select>
+                <button id="loadContent" class="secondary-button">Load Content</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="gridContainer">
+    <section id="gridContainer" class="numbered-section">
+      <div class="section-header">
+        <div class="section-number">3</div>
+        <h2>Cell Editor</h2>
+      </div>
       <div class="grids-wrapper">
         <div class="grid-section">
-          <h2>Prompt Grid</h2>
+          <h3>Prompt Grid</h3>
           <div id="promptGrid" class="grid"></div>
         </div>
         <div class="grid-section">
-          <h2>Image Grid</h2>
+          <h3>Image Grid</h3>
           <div id="imageGrid" class="grid"></div>
         </div>
       </div>
+      <div id="controls" class="grid-controls">
+        <button id="generateAll" class="primary-button">Generate All Images</button>
+        <button id="resetAll" class="secondary-button">Reset All</button>
+      </div>
     </section>
 
-    <section id="controls">
-      <button id="generateAll" class="primary-button">Generate All Images</button>
-      <button id="resetAll" class="secondary-button">Reset All</button>
-    </section>
-
-    <section id="backgroundRemover">
-      <h2>Background Removal</h2>
+    <section id="backgroundRemover" class="numbered-section">
+      <div class="section-header">
+        <div class="section-number">4</div>
+        <h2>Background Removal</h2>
+      </div>
       <p>Remove backgrounds from your spritesheet to create transparent PNGs.</p>
       
       <div class="color-input-wrapper">
@@ -135,8 +216,11 @@
       </div>
     </section>
 
-    <section id="spritesheet">
-      <h2>Spritesheet Preview</h2>
+    <section id="spritesheet" class="numbered-section">
+      <div class="section-header">
+        <div class="section-number">5</div>
+        <h2>Spritesheet Export</h2>
+      </div>
       <div id="spritesheetPreview">
         <p class="empty-message">Generate images to create a spritesheet</p>
       </div>
@@ -151,8 +235,11 @@
       </div>
     </section>
     
-    <section id="exportData">
-      <h2>Export Sprite Data</h2>
+    <section id="exportData" class="numbered-section">
+      <div class="section-header">
+        <div class="section-number">6</div>
+        <h2>Export Sprite Data</h2>
+      </div>
       <p>Generate JavaScript code for using your spritesheet in your projects.</p>
       
       <div class="checkbox-group">
