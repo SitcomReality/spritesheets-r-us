@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Event Listeners
-  updateGridBtn.addEventListener('click', handleUpdateGrid);
+  updateGridBtn.addEventListener('click', () => window.handleUpdateGrid());
   generateAllBtn.addEventListener('click', handleGenerateAll);
   resetAllBtn.addEventListener('click', handleResetAll);
   downloadBtn.addEventListener('click', handleDownload);
