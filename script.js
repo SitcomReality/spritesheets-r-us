@@ -334,6 +334,116 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ... existing code ...
 
+  function createImageGrid() {
+    imageGridElement.innerHTML = '';
+    imageGridElement.style.gridTemplateColumns = `repeat(${currentState.columns}, 1fr)`;
+    
+    for (let row = 0; row < currentState.rows; row++) {
+      for (let col = 0; col < currentState.columns; col++) {
+        const cellIndex = row * currentState.columns + col;
+        const cell = currentState.cells[cellIndex];
+        
+        const cellElement = document.createElement('div');
+        cellElement.className = 'grid-cell image-cell';
+        cellElement.dataset.row = row;
+        cellElement.dataset.col = col;
+        cellElement.dataset.index = cellIndex;
+        cellElement.style.position = 'relative';
+        
+        // Add row and column numbers for reference
+        const rowNumber = document.createElement('div');
+        rowNumber.className = 'row-number';
+        rowNumber.textContent = row + 1;
+        
+        const colNumber = document.createElement('div');
+        colNumber.className = 'col-number';
+        colNumber.textContent = col + 1;
+        
+        cellElement.appendChild(rowNumber);
+        cellElement.appendChild(colNumber);
+        
+        if (cell.isGenerating) {
+          // Show loading indicator
+          const loading = document.createElement('div');
+          loading.className = 'loading';
+          
+          const spinner = document.createElement('div');
+          spinner.className = 'spinner';
+          
+          const loadingText = document.createElement('div');
+          loadingText.textContent = 'Generating...';
+          loadingText.style.marginTop = '10px';
+          
+          loading.appendChild(spinner);
+          loading.appendChild(loadingText);
+          cellElement.appendChild(loading);
+        } else if (cell.imageUrl) {
+          // Show the generated image
+          const img = document.createElement('img');
+          img.className = 'image-preview';
+          img.src = cell.localUrl || cell.imageUrl;
+          img.alt = `Image for cell (${row + 1}, ${col + 1})`;
+          img.loading = 'lazy';
+          
+          cellElement.appendChild(img);
+          
+          // Add regenerate and clear buttons
+          const cellControls = document.createElement('div');
+          cellControls.className = 'cell-controls';
+          
+          const regenerateBtn = document.createElement('button');
+          regenerateBtn.className = 'cell-button primary-button';
+          regenerateBtn.textContent = 'Regenerate';
+          regenerateBtn.addEventListener('click', () => handleGenerateCell(cellIndex));
+          
+          const clearBtn = document.createElement('button');
+          clearBtn.className = 'cell-button secondary-button';
+          clearBtn.textContent = 'Clear';
+          clearBtn.addEventListener('click', () => {
+            cell.imageUrl = null;
+            cell.localUrl = null;
+            createImageGrid();
+            updateSpritesheetPreview();
+          });
+          
+          cellControls.appendChild(regenerateBtn);
+          cellControls.appendChild(clearBtn);
+          cellElement.appendChild(cellControls);
+        } else {
+          // Show placeholder
+          const placeholder = document.createElement('div');
+          placeholder.className = 'image-placeholder';
+          placeholder.textContent = cell.error || 'No image generated yet';
+          cellElement.appendChild(placeholder);
+        }
+        
+        // Add hover effect to highlight corresponding cells
+        cellElement.addEventListener('mouseenter', () => highlightCells(row, col));
+        cellElement.addEventListener('mouseleave', () => unhighlightCells());
+        
+        imageGridElement.appendChild(cellElement);
+      }
+    }
+    
+    // Enable or disable the download button based on whether all cells have images
+    downloadBtn.disabled = !currentState.cells.every(cell => cell.imageUrl);
+  }
+
+  function unhighlightCells() {
+    const promptCells = promptGridElement.querySelectorAll('.grid-cell');
+    const imageCells = imageGridElement.querySelectorAll('.grid-cell');
+    
+    promptCells.forEach(cell => {
+      cell.classList.remove('highlight');
+    });
+    
+    imageCells.forEach(cell => {
+      cell.classList.remove('highlight');
+    });
+  }
+
+  // ... existing code ...
+
   // Functions for row/column style overrides
   function updateRowColumnStyleOverrides() {
     createRowStyleOverridesUI();
@@ -733,7 +843,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ... existing code ...
 
-  // Function to save and load styles should now save and restore row/column overrides
   function saveStyle() {
     try {
       const styleName = styleNameInput.value.trim();
@@ -774,7 +883,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Reset all function should now clear row/column overrides as well
   function resetAll() {
     // Reset all cell data
     currentState.cells.forEach(cell => {
@@ -830,8 +938,6 @@ document.addEventListener('DOMContentLoaded', () => {
       showError('Failed to load style preset. ' + error.message);
     }
   }
-
-  // ... existing code ...
 
   // ... existing code ...
 });
