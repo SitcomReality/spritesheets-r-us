@@ -138,7 +138,12 @@ function createRowStyleOverridesUI() {
       if (overrideCheckbox.checked) {
         overrideInputs.classList.add('show');
       } else {
-        overrideInputs.classList.remove('show');
+        // Remove the style override when unchecked
+        delete window.currentState.rowStyleOverrides[row];
+        overrideRow.classList.remove('active');
+        
+        // Update the prompt grid to reflect changes
+        window.createPromptGrid();
       }
     });
     
@@ -284,7 +289,12 @@ function createColumnStyleOverridesUI() {
       if (overrideCheckbox.checked) {
         overrideInputs.classList.add('show');
       } else {
-        overrideInputs.classList.remove('show');
+        // Remove the style override when unchecked
+        delete window.currentState.columnStyleOverrides[col];
+        overrideRow.classList.remove('active');
+        
+        // Update the prompt grid to reflect changes
+        window.createPromptGrid();
       }
     });
     

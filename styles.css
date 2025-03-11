@@ -661,11 +661,11 @@ body.dark-mode .style-detail-text {
 }
 
 .prompt-cell[data-row-override="true"] {
-  background-color: rgba(78, 205, 196, 0.1);
+  background-color: rgba(78, 205, 196, 0.15);
 }
 
 .prompt-cell[data-col-override="true"] {
-  background-color: rgba(255, 150, 55, 0.1);
+  background-color: rgba(255, 150, 55, 0.15);
 }
 
 .prompt-cell[data-row-override="true"][data-col-override="true"] {
@@ -677,11 +677,11 @@ body.dark-mode .style-detail-text {
 }
 
 body.dark-mode .prompt-cell[data-row-override="true"] {
-  background-color: rgba(78, 205, 196, 0.2);
+  background-color: rgba(78, 205, 196, 0.25);
 }
 
 body.dark-mode .prompt-cell[data-col-override="true"] {
-  background-color: rgba(255, 150, 55, 0.2);
+  background-color: rgba(255, 150, 55, 0.25);
 }
 
 body.dark-mode .prompt-cell[data-row-override="true"][data-col-override="true"] {

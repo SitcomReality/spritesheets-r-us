@@ -9,47 +9,34 @@ function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
   const rowOverride = window.currentState.rowStyleOverrides[rowIndex];
   const colOverride = window.currentState.columnStyleOverrides[colIndex];
   
-  const prefixParts = [];
-  const suffixParts = [];
+  let prefixToUse = globalPrefix;
+  let suffixToUse = globalSuffix;
   
-  // Add column prefix if it exists
-  if (colOverride && colOverride.prefix) {
-    prefixParts.push(colOverride.prefix.trim());
-  }
-  
-  // Add row prefix if it exists
+  // Apply row override prefix if it exists
   if (rowOverride && rowOverride.prefix) {
-    prefixParts.push(rowOverride.prefix.trim());
+    prefixToUse = rowOverride.prefix.trim();
   }
   
-  // If no overrides exist, use global prefix
-  if (prefixParts.length === 0 && globalPrefix) {
-    prefixParts.push(globalPrefix);
+  // Apply column override prefix if it exists (column overrides take precedence over row)
+  if (colOverride && colOverride.prefix) {
+    prefixToUse = colOverride.prefix.trim();
   }
   
-  // Add column suffix if it exists
-  if (colOverride && colOverride.suffix) {
-    suffixParts.push(colOverride.suffix.trim());
-  }
-  
-  // Add row suffix if it exists
+  // Apply row override suffix if it exists
   if (rowOverride && rowOverride.suffix) {
-    suffixParts.push(rowOverride.suffix.trim());
+    suffixToUse = rowOverride.suffix.trim();
   }
   
-  // If no overrides exist, use global suffix
-  if (suffixParts.length === 0 && globalSuffix) {
-    suffixParts.push(globalSuffix);
+  // Apply column override suffix if it exists (column overrides take precedence over row)
+  if (colOverride && colOverride.suffix) {
+    suffixToUse = colOverride.suffix.trim();
   }
   
   // Build the final prompt
-  const prefix = prefixParts.join(' ');
-  const suffix = suffixParts.join(' ');
-  
   let finalPrompt = '';
-  if (prefix) finalPrompt += `${prefix} `;
+  if (prefixToUse) finalPrompt += `${prefixToUse} `;
   finalPrompt += cellPrompt.trim();
-  if (suffix) finalPrompt += ` ${suffix}`;
+  if (suffixToUse) finalPrompt += ` ${suffixToUse}`;
   
   return finalPrompt.trim();
 }
