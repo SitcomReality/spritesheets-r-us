@@ -1173,6 +1173,52 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   }
   
+  async function generateAllCells() {
+    // Show progress modal
+    progressModal.style.display = 'flex';
+    progressBar.style.width = '0%';
+    
+    const totalCells = currentState.rows * currentState.columns;
+    let completedCells = 0;
+    
+    // Disable buttons while generating
+    generateAllBtn.disabled = true;
+    resetAllBtn.disabled = true;
+    updateGridBtn.disabled = true;
+    
+    try {
+      for (let i = 0; i < totalCells; i++) {
+        progressMessage.textContent = `Generating image ${completedCells + 1} of ${totalCells}`;
+        progressBar.style.width = (completedCells / totalCells * 100) + '%';
+        
+        try {
+          await generateCell(i, false); // Don't update UI for each cell
+          completedCells++;
+        } catch (error) {
+          console.error(`Error generating cell ${i}:`, error);
+          // Continue with next cell even if one fails
+        }
+      }
+      
+      // Update the UI after all generations
+      createImageGrid();
+      updateSpritesheetPreview();
+      
+      showAlert(`Generated ${completedCells} of ${totalCells} images successfully.`, 'success');
+    } catch (error) {
+      console.error('Error in batch generation:', error);
+      showError('Error generating all images: ' + error.message);
+    } finally {
+      // Re-enable buttons
+      generateAllBtn.disabled = false;
+      resetAllBtn.disabled = false;
+      updateGridBtn.disabled = false;
+      
+      // Hide progress modal
+      progressModal.style.display = 'none';
+    }
+  }
+  
   function handleResetAll() {
     showConfirmation(
       "Reset All Cells",
