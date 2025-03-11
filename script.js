@@ -948,6 +948,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function handleResetAll() {
+    showConfirmation(
+      "Reset All Cells",
+      "Are you sure you want to reset all cells? This will clear all images and prompts.",
+      resetAll
+    );
+  }
+  
+  function resetAll() {
+    // Clear all cells
+    currentState.cells.forEach(cell => {
+      cell.imageUrl = null;
+      cell.localUrl = null;
+      cell.prompt = '';
+      cell.isGenerating = false;
+      cell.error = null;
+    });
+    
+    // Update the UI
+    createPromptGrid();
+    createImageGrid();
+    updateSpritesheetPreview();
+    
+    showAlert('All cells reset successfully', 'success');
+  }
+
   // ... existing code ...
 
   function downloadSpritesheet(scale = 1.0) {
