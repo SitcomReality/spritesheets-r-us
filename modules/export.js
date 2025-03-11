@@ -21,11 +21,12 @@ function generateCoordsSnippet() {
       const cell = window.currentState.cells[cellIndex];
       
       if (cell.imageUrl) {
-        const name = cell.prompt.trim().replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        const fullPrompt = cell.prompt.trim();
+        const name = fullPrompt.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase().substring(0, 16);
         const x = col * cellWidth;
         const y = row * cellHeight;
         
-        cells.push(`  "${name || `sprite_${row}_${col}`}": { x: ${x}, y: ${y}, width: ${cellWidth}, height: ${cellHeight} }`);
+        cells.push(`  "${name || `sprite_${row}_${col}`}": { x: ${x}, y: ${y}, width: ${cellWidth}, height: ${cellHeight} } // ${fullPrompt}`);
       }
     }
   }
@@ -50,9 +51,12 @@ function generateBoundingBoxesSnippet() {
   let code = `// Spritesheet bounding boxes for ${window.currentState.rows}x${window.currentState.columns} grid\n`;
   code += `const SPRITESHEET_WIDTH = ${window.currentState.columns * cellWidth};\n`;
   code += `const SPRITESHEET_HEIGHT = ${window.currentState.rows * cellHeight};\n\n`;
-  code += `const spriteBoundingBoxes = [\n`;
+  code += `const sprites = {\n`;
   
   const boxes = [];
+  
+  // Find actual bounding boxes if we have a canvas
+  const spritesheetCanvas = window.currentState.spritesheetCanvas;
   
   for (let row = 0; row < window.currentState.rows; row++) {
     for (let col = 0; col < window.currentState.columns; col++) {
@@ -60,30 +64,76 @@ function generateBoundingBoxesSnippet() {
       const cell = window.currentState.cells[cellIndex];
       
       if (cell.imageUrl) {
-        const name = cell.prompt.trim().replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-        const x = col * cellWidth;
-        const y = row * cellHeight;
+        let x = col * cellWidth;
+        let y = row * cellHeight;
+        let width = cellWidth;
+        let height = cellHeight;
         
-        boxes.push(`  { 
-    name: "${name || `sprite_${row}_${col}`}",
-    x: ${x}, 
-    y: ${y}, 
-    width: ${cellWidth}, 
-    height: ${cellHeight},
-    row: ${row},
-    column: ${col}
-  }`);
+        // Calculate tight bounding box if we have a spritesheet canvas and background was removed
+        if (spritesheetCanvas && window.currentState.backgroundRemoved) {
+          const bounds = findBoundingBox(spritesheetCanvas, col, row, window.currentState.cellWidth, window.currentState.cellHeight);
+          if (bounds) {
+            x = col * cellWidth + Math.round(bounds.minX * scale);
+            y = row * cellHeight + Math.round(bounds.minY * scale);
+            width = Math.round((bounds.maxX - bounds.minX + 1) * scale);
+            height = Math.round((bounds.maxY - bounds.minY + 1) * scale);
+          }
+        }
+        
+        // Truncate prompt to 16 chars for name but keep original for comment
+        const fullPrompt = cell.prompt.trim();
+        const name = fullPrompt.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase().substring(0, 16);
+        
+        boxes.push(`  "${name || `sprite_${row}_${col}`}": { x: ${x}, y: ${y}, width: ${width}, height: ${height} } // ${fullPrompt}`);
       }
     }
   }
   
   code += boxes.join(',\n');
-  code += `\n];\n\n`;
+  code += `\n};\n\n`;
   code += `// Usage example:\n`;
-  code += `// const sprite = spriteBoundingBoxes.find(box => box.name === 'sprite_name');\n`;
-  code += `// ctx.drawImage(spritesheet, sprite.x, sprite.y, sprite.width, sprite.height, 0, 0, sprite.width, sprite.height);`;
+  code += `// ctx.drawImage(spritesheet, sprites.sprite_name.x, sprites.sprite_name.y, sprites.sprite_name.width, sprites.sprite_name.height, 0, 0, sprites.sprite_name.width, sprites.sprite_name.height);`;
   
   coordsOutput.value = code;
+}
+
+// Helper function to find the bounding box of non-transparent pixels in a cell
+function findBoundingBox(canvas, col, row, cellWidth, cellHeight) {
+  const ctx = canvas.getContext('2d');
+  const x = col * cellWidth;
+  const y = row * cellHeight;
+  
+  // Get image data for this cell
+  const imageData = ctx.getImageData(x, y, cellWidth, cellHeight);
+  const data = imageData.data;
+  
+  let minX = cellWidth;
+  let minY = cellHeight;
+  let maxX = 0;
+  let maxY = 0;
+  let hasOpaquePixels = false;
+  
+  // Find the bounds of non-transparent pixels
+  for (let y = 0; y < cellHeight; y++) {
+    for (let x = 0; x < cellWidth; x++) {
+      const index = (y * cellWidth + x) * 4;
+      const alpha = data[index + 3];
+      
+      if (alpha > 0) { // Non-transparent pixel
+        hasOpaquePixels = true;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+  
+  if (!hasOpaquePixels) {
+    return null; // No opaque pixels found
+  }
+  
+  return { minX, minY, maxX, maxY };
 }
 
 function copyOutputToClipboard() {

@@ -15,28 +15,30 @@ function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
   // Add column prefix if it exists
   if (colOverride && colOverride.prefix) {
     prefixParts.push(colOverride.prefix.trim());
-  } else if (globalPrefix) {
-    prefixParts.push(globalPrefix);
   }
   
   // Add row prefix if it exists
   if (rowOverride && rowOverride.prefix) {
     prefixParts.push(rowOverride.prefix.trim());
-  } else if (!colOverride?.prefix && globalPrefix && prefixParts.length === 0) {
+  }
+  
+  // If no overrides exist, use global prefix
+  if (prefixParts.length === 0 && globalPrefix) {
     prefixParts.push(globalPrefix);
   }
   
   // Add column suffix if it exists
   if (colOverride && colOverride.suffix) {
     suffixParts.push(colOverride.suffix.trim());
-  } else if (globalSuffix) {
-    suffixParts.push(globalSuffix);
   }
   
   // Add row suffix if it exists
   if (rowOverride && rowOverride.suffix) {
     suffixParts.push(rowOverride.suffix.trim());
-  } else if (!colOverride?.suffix && globalSuffix && suffixParts.length === 0) {
+  }
+  
+  // If no overrides exist, use global suffix
+  if (suffixParts.length === 0 && globalSuffix) {
     suffixParts.push(globalSuffix);
   }
   
