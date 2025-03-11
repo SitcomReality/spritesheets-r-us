@@ -40,6 +40,8 @@
       <div class="save-load-container">
         <button id="saveState" class="secondary-button">Save Current Configuration</button>
         <button id="loadState" class="secondary-button">Load Saved Configuration</button>
+        <button id="saveCustomStyle" class="secondary-button">Save Custom Style</button>
+        <button id="saveCustomContent" class="secondary-button">Save Custom Content Set</button>
       </div>
       <div class="global-prompts">
         <div class="input-group full-width">
@@ -61,6 +63,7 @@
               <option value="buildings">Building Types</option>
               <option value="vehicles">Vehicles</option>
               <option value="animals">Animals</option>
+              <option value="customSeparator" disabled>-- Custom Content Sets --</option>
             </select>
           </div>
           <div class="input-group">
@@ -75,9 +78,11 @@
               <option value="watercolor">Watercolor Painting</option>
               <option value="retro3D">Retro 3D (PS1 style)</option>
               <option value="cute">Cute Chibi Characters</option>
+              <option value="customSeparator" disabled>-- Custom Styles --</option>
             </select>
           </div>
         </div>
+        <button id="manageCustomSets" class="secondary-button">Manage Custom Sets</button>
       </div>
     </section>
 
@@ -102,7 +107,7 @@
     <section id="backgroundRemover">
       <h2>Background Removal</h2>
       <p>Remove backgrounds from your spritesheet to create transparent PNGs.</p>
-      
+029 
       <div class="color-input-wrapper">
         <label for="colorToRemove">Color to Remove:</label>
         <input type="color" id="colorToRemove" class="color-input" value="#FFFFFF">

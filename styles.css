@@ -571,6 +571,7 @@ body.dark-mode .code-output {
 
 .save-load-container {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1rem;
   justify-content: center;
