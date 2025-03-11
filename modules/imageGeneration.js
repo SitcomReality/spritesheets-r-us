@@ -6,6 +6,10 @@ function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
   const globalPrefix = prefixPromptInput.value.trim();
   const globalSuffix = suffixPromptInput.value.trim();
   
+  console.log("Current state rowStyleOverrides:", window.currentState.rowStyleOverrides);
+  console.log("Current state columnStyleOverrides:", window.currentState.columnStyleOverrides);
+  console.log(`Looking for override at rowIndex=${rowIndex}, colIndex=${colIndex}`);
+  
   const rowOverride = window.currentState.rowStyleOverrides[rowIndex];
   const colOverride = window.currentState.columnStyleOverrides[colIndex];
   
