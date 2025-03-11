@@ -825,6 +825,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ... existing code ...
 
+  function handleGenerateCell(cellIndex) {
+    // Show confirmation for single cell generation
+    if (currentState.cells[cellIndex].imageUrl) {
+      showConfirmation(
+        "Regenerate Image",
+        "Are you sure you want to regenerate this image?",
+        () => generateCell(cellIndex)
+      );
+    } else {
+      generateCell(cellIndex);
+    }
+  }
+
   async function generateCell(cellIndex, updateUI = true) {
     const cell = currentState.cells[cellIndex];
     const row = cell.row;
@@ -864,102 +877,106 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ... existing code ...
-
-  function saveStyle() {
+  async function generateImage(prompt) {
     try {
-      const styleName = styleNameInput.value.trim();
-      if (!styleName) {
-        showError("Please enter a name for this style preset.");
-        return;
-      }
-
-      // Get all saved styles
-      const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+      const result = await websim.imageGen({
+        prompt: prompt,
+        aspect_ratio: "1:1",
+      });
       
-      // Add new style
-      savedStyles[styleName] = {
-        prefix: prefixPromptInput.value,
-        suffix: suffixPromptInput.value,
-        name: styleName
+      return { 
+        url: result.url,
+        localUrl: result.url
       };
-      
-      // Save back to localStorage
-      localStorage.setItem('savedStyles', JSON.stringify(savedStyles));
-      
-      // Add to styleOverrides for potential row/column use
-      currentState.styleOverrides[styleName] = {
-        prefix: prefixPromptInput.value,
-        suffix: suffixPromptInput.value,
-        name: styleName
-      };
-      
-      // Update style dropdown
-      updateStyleDropdown();
-      updateSavedStylesSelect();
-      
-      showAlert(`Style preset "${styleName}" saved successfully!`, 'success');
-      styleNameInput.value = '';
     } catch (error) {
-      console.error('Error saving style:', error);
-      showError('Failed to save style preset. ' + error.message);
+      console.error('Error generating image:', error);
+      throw error;
     }
+  }
+
+  function handleGenerateAll() {
+    showConfirmation(
+      "Generate All Images",
+      `Are you sure you want to generate images for all ${currentState.rows * currentState.columns} cells?`,
+      generateAllCells
+    );
   }
   
-  function resetAll() {
-    // Reset all cell data
-    currentState.cells.forEach(cell => {
-      cell.prompt = '';
-      cell.imageUrl = null;
-      cell.localUrl = null;
-      cell.isGenerating = false;
-      cell.error = null;
-    });
+  async function generateAllCells() {
+    // Show progress modal
+    progressModal.style.display = 'flex';
+    progressBar.style.width = '0%';
     
-    // Reset global prompts
-    prefixPromptInput.value = '';
-    suffixPromptInput.value = '';
+    const totalCells = currentState.rows * currentState.columns;
+    let completedCells = 0;
     
-    // Reset row and column style overrides
-    currentState.rowStyleOverrides = {};
-    currentState.columnStyleOverrides = {};
+    // Disable buttons while generating
+    generateAllBtn.disabled = true;
+    resetAllBtn.disabled = true;
+    updateGridBtn.disabled = true;
     
-    // Update UI
-    createPromptGrid();
-    createImageGrid();
-    updateSpritesheetPreview();
-    updateRowColumnStyleOverrides();
-    
-    // Disable download button
-    downloadBtn.disabled = true;
+    try {
+      for (let i = 0; i < totalCells; i++) {
+        progressMessage.textContent = `Generating image ${completedCells + 1} of ${totalCells}`;
+        progressBar.style.width = (completedCells / totalCells * 100) + '%';
+        
+        try {
+          await generateCell(i, false); // Don't update UI for each cell
+          completedCells++;
+        } catch (error) {
+          console.error(`Error generating cell ${i}:`, error);
+          // Continue with next cell even if one fails
+        }
+      }
+      
+      // Update the UI after all generations
+      createImageGrid();
+      updateSpritesheetPreview();
+      
+      showAlert(`Generated ${completedCells} of ${totalCells} images successfully.`, 'success');
+    } catch (error) {
+      console.error('Error in batch generation:', error);
+      showError('Error generating all images: ' + error.message);
+    } finally {
+      // Re-enable buttons
+      generateAllBtn.disabled = false;
+      resetAllBtn.disabled = false;
+      updateGridBtn.disabled = false;
+      
+      // Hide progress modal
+      progressModal.style.display = 'none';
+    }
   }
 
   // ... existing code ...
 
-  function loadStyle() {
-    try {
-      const styleName = savedStylesSelect.value;
-      if (!styleName) {
-        showError('Please select a style to load.');
-        return;
-      }
-      
-      const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-      
-      if (!savedStyles[styleName]) {
-        showError(`Style "${styleName}" not found.`);
-        return;
-      }
-      
-      // Load the style
-      prefixPromptInput.value = savedStyles[styleName].prefix || '';
-      suffixPromptInput.value = savedStyles[styleName].suffix || '';
-      
-      showAlert(`Style preset "${styleName}" loaded successfully!`, 'success');
-    } catch (error) {
-      console.error('Error loading style:', error);
-      showError('Failed to load style preset. ' + error.message);
+  function downloadSpritesheet(scale = 1.0) {
+    if (!currentState.spritesheetCanvas) {
+      showError("No spritesheet available to download.");
+      return;
     }
+    
+    // Create a new canvas with the scaled dimensions
+    const canvas = currentState.spritesheetCanvas;
+    const scaledWidth = Math.round(canvas.width * scale);
+    const scaledHeight = Math.round(canvas.height * scale);
+    
+    const scaledCanvas = document.createElement('canvas');
+    scaledCanvas.width = scaledWidth;
+    scaledCanvas.height = scaledHeight;
+    
+    const ctx = scaledCanvas.getContext('2d');
+    ctx.drawImage(canvas, 0, 0, scaledWidth, scaledHeight);
+    
+    // Create download link
+    const downloadLink = document.createElement('a');
+    downloadLink.href = scaledCanvas.toDataURL('image/png');
+    downloadLink.download = `spritesheet_${currentState.rows}x${currentState.columns}.png`;
+    
+    // Trigger download
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   }
 
   // ... existing code ...
@@ -1163,68 +1180,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add the missing event handler functions
   function handleUpdateGrid() {
     createGrids();
-  }
-  
-  function handleGenerateAll() {
-    showConfirmation(
-      "Generate All Images",
-      `Are you sure you want to generate images for all ${currentState.rows * currentState.columns} cells?`,
-      generateAllCells
-    );
-  }
-  
-  async function generateAllCells() {
-    // Show progress modal
-    progressModal.style.display = 'flex';
-    progressBar.style.width = '0%';
-    
-    const totalCells = currentState.rows * currentState.columns;
-    let completedCells = 0;
-    
-    // Disable buttons while generating
-    generateAllBtn.disabled = true;
-    resetAllBtn.disabled = true;
-    updateGridBtn.disabled = true;
-    
-    try {
-      for (let i = 0; i < totalCells; i++) {
-        progressMessage.textContent = `Generating image ${completedCells + 1} of ${totalCells}`;
-        progressBar.style.width = (completedCells / totalCells * 100) + '%';
-        
-        try {
-          await generateCell(i, false); // Don't update UI for each cell
-          completedCells++;
-        } catch (error) {
-          console.error(`Error generating cell ${i}:`, error);
-          // Continue with next cell even if one fails
-        }
-      }
-      
-      // Update the UI after all generations
-      createImageGrid();
-      updateSpritesheetPreview();
-      
-      showAlert(`Generated ${completedCells} of ${totalCells} images successfully.`, 'success');
-    } catch (error) {
-      console.error('Error in batch generation:', error);
-      showError('Error generating all images: ' + error.message);
-    } finally {
-      // Re-enable buttons
-      generateAllBtn.disabled = false;
-      resetAllBtn.disabled = false;
-      updateGridBtn.disabled = false;
-      
-      // Hide progress modal
-      progressModal.style.display = 'none';
-    }
-  }
-  
-  function handleResetAll() {
-    showConfirmation(
-      "Reset All Cells",
-      "Are you sure you want to reset all prompts and images?",
-      resetAll
-    );
   }
   
   function handleDownload() {
