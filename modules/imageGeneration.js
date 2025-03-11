@@ -9,13 +9,17 @@ function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
   console.log("Current state rowStyleOverrides:", window.currentState.rowStyleOverrides);
   console.log("Current state columnStyleOverrides:", window.currentState.columnStyleOverrides);
   console.log(`Looking for override at rowIndex=${rowIndex}, colIndex=${colIndex}`);
+  console.log("Full state.rowStyleOverrides:", JSON.stringify(window.currentState.rowStyleOverrides));
+  console.log("Full state.columnStyleOverrides:", JSON.stringify(window.currentState.columnStyleOverrides));
   
-  const rowOverride = window.currentState.rowStyleOverrides[rowIndex];
-  const colOverride = window.currentState.columnStyleOverrides[colIndex];
+  const rowOverride = window.currentState.rowStyleOverrides[rowIndex] || null;
+  const colOverride = window.currentState.columnStyleOverrides[colIndex] || null;
   
   console.log(`Cell (${rowIndex+1},${colIndex+1}) - Checking for overrides:`);
   console.log(`Row override exists: ${!!rowOverride}`, rowOverride);
   console.log(`Column override exists: ${!!colOverride}`, colOverride);
+  console.log(`Row override typeof: ${typeof window.currentState.rowStyleOverrides[rowIndex]}`);
+  console.log(`Column override typeof: ${typeof window.currentState.columnStyleOverrides[colIndex]}`);
   
   let prefixToUse = globalPrefix;
   let suffixToUse = globalSuffix;

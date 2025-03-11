@@ -142,10 +142,24 @@ function createRowStyleOverridesUI() {
     overrideCheckbox.addEventListener('change', () => {
       if (overrideCheckbox.checked) {
         overrideInputs.classList.add('show');
+        
+        // Also apply the override immediately when checked
+        window.currentState.rowStyleOverrides[row] = {
+          prefix: prefixInput.value,
+          suffix: suffixInput.value,
+          name: nameInput.value || `Row ${row + 1} Style`
+        };
+        
+        console.log(`Row ${row+1} style override initially applied on checkbox:`, window.currentState.rowStyleOverrides[row]);
+        overrideRow.classList.add('active');
+        
+        // Update the prompt grid to reflect changes
+        window.createPromptGrid();
       } else {
         // Remove the style override when unchecked
         delete window.currentState.rowStyleOverrides[row];
         overrideRow.classList.remove('active');
+        overrideInputs.classList.remove('show');
         
         // Update the prompt grid to reflect changes
         window.createPromptGrid();
@@ -298,10 +312,24 @@ function createColumnStyleOverridesUI() {
     overrideCheckbox.addEventListener('change', () => {
       if (overrideCheckbox.checked) {
         overrideInputs.classList.add('show');
+        
+        // Also apply the override immediately when checked
+        window.currentState.columnStyleOverrides[col] = {
+          prefix: prefixInput.value,
+          suffix: suffixInput.value,
+          name: nameInput.value || `Column ${col + 1} Style`
+        };
+        
+        console.log(`Column ${col+1} style override initially applied on checkbox:`, window.currentState.columnStyleOverrides[col]);
+        overrideRow.classList.add('active');
+        
+        // Update the prompt grid to reflect changes
+        window.createPromptGrid();
       } else {
         // Remove the style override when unchecked
         delete window.currentState.columnStyleOverrides[col];
         overrideRow.classList.remove('active');
+        overrideInputs.classList.remove('show');
         
         // Update the prompt grid to reflect changes
         window.createPromptGrid();
