@@ -1379,4 +1379,20 @@ document.addEventListener('DOMContentLoaded', () => {
       this.value = '';
     });
   }
+
+  function populateGrid(contentArray) {
+    // Reset all cells first
+    currentState.cells.forEach((cell, index) => {
+      // Calculate position in the contentArray
+      const contentIndex = index % contentArray.length;
+      // Set the prompt to the corresponding content from the array
+      cell.prompt = contentArray[contentIndex] || '';
+    });
+    
+    // Update the prompt grid to show the new content
+    createPromptGrid();
+    
+    // Show feedback
+    showAlert('Grid populated with content', 'success');
+  }
 });
