@@ -940,4 +940,89 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ... existing code ...
+
+  function updateSpritesheetPreview() {
+    // Clear previous content
+    spritesheetPreview.innerHTML = '';
+    
+    // If no cells have images, show placeholder message
+    if (!currentState.cells.some(cell => cell.imageUrl)) {
+      const placeholder = document.createElement('p');
+      placeholder.className = 'empty-message';
+      placeholder.textContent = 'Generate images to create a spritesheet';
+      spritesheetPreview.appendChild(placeholder);
+      return;
+    }
+    
+    // Create a canvas for the spritesheet
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas dimensions based on cell count and size
+    const canvasWidth = currentState.columns * currentState.cellWidth;
+    const canvasHeight = currentState.rows * currentState.cellHeight;
+    
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    
+    // Add white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    // Add the cell images to the canvas
+    const loadPromises = [];
+    
+    currentState.cells.forEach(cell => {
+      if (cell.imageUrl) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = cell.localUrl || cell.imageUrl;
+        
+        const promise = new Promise((resolve, reject) => {
+          img.onload = () => {
+            const x = cell.col * currentState.cellWidth;
+            const y = cell.row * currentState.cellHeight;
+            ctx.drawImage(img, x, y, currentState.cellWidth, currentState.cellHeight);
+            resolve();
+          };
+          img.onerror = () => {
+            console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
+            reject();
+          };
+        });
+        
+        loadPromises.push(promise);
+      }
+    });
+    
+    // When all images are loaded, append the canvas to the preview
+    Promise.all(loadPromises.map(p => p.catch(() => null)))
+      .then(() => {
+        // Calculate display size to fit in preview area
+        const maxWidth = spritesheetPreview.clientWidth - 40; // Account for padding
+        const scale = Math.min(1, maxWidth / canvasWidth);
+        
+        canvas.style.width = (canvasWidth * scale) + 'px';
+        canvas.style.height = (canvasHeight * scale) + 'px';
+        
+        // Save state for download
+        currentState.spritesheetCanvas = canvas;
+        currentState.canvasFullSize = false;
+        
+        spritesheetPreview.appendChild(canvas);
+        
+        // Update download button state
+        downloadBtn.disabled = !currentState.cells.every(cell => cell.imageUrl);
+        
+        // Update download resolution info
+        updateDownloadResolutionInfo();
+      });
+  }
+
+  function updateDownloadResolutionInfo() {
+    const scale = parseFloat(downloadScaleInput.value) || 1.0;
+    const width = Math.round(currentState.columns * currentState.cellWidth * scale);
+    const height = Math.round(currentState.rows * currentState.cellHeight * scale);
+    downloadResolutionInfo.textContent = `Final resolution: ${width} × ${height} pixels`;
+  }
 });
