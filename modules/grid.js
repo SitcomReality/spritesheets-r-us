@@ -215,6 +215,9 @@ function createImageGrid() {
         // Show loading indicator
         const loading = document.createElement('div');
         loading.className = 'loading';
+        loading.style.width = '100%';
+        loading.style.height = '100%';
+        loading.style.minHeight = `${window.currentState.cellHeight / 4}px`;
         
         const spinner = document.createElement('div');
         spinner.className = 'spinner';
@@ -263,6 +266,7 @@ function createImageGrid() {
         const placeholder = document.createElement('div');
         placeholder.className = 'image-placeholder';
         placeholder.textContent = cell.error || 'No image generated yet';
+        placeholder.style.minHeight = `${window.currentState.cellHeight / 4}px`;
         cellElement.appendChild(placeholder);
       }
       
