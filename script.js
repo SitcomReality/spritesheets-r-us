@@ -1,3 +1,5 @@
+// ... existing code ...
+
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
   const rowsInput = document.getElementById('rows');
@@ -44,8 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const contentNameInput = document.getElementById('contentName');
   const savedStylesSelect = document.getElementById('savedStyles');
   const savedContentsSelect = document.getElementById('savedContents');
-  const rowStyleOverridesList = document.getElementById('rowStyleOverrides');
-  const colStyleOverridesList = document.getElementById('colStyleOverrides');
+  const rowStyleOverridesContainer = document.getElementById('rowStyleOverrides');
+  const columnStyleOverridesContainer = document.getElementById('columnStyleOverrides');
+  const styleDetailModal = document.getElementById('styleDetailModal');
+  const styleDetailTitle = document.getElementById('styleDetailTitle');
+  const styleDetailPrefix = document.getElementById('styleDetailPrefix');
+  const styleDetailSuffix = document.getElementById('styleDetailSuffix');
+  const styleDetailCloseBtn = document.getElementById('styleDetailClose');
 
   // State
   let currentState = {
@@ -60,8 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
     mostCommonColor: { r: 255, g: 255, b: 255, hex: '#FFFFFF', rgba: 'rgba(255,255,255,1)' },
     canvasFullSize: false, // New property to track canvas zoom state
     backgroundRemoved: false, // Track if background removal has been applied
-    rowStyles: {}, // Store style overrides for rows: { rowIndex: { name, prefix, suffix } }
-    colStyles: {}  // Store style overrides for columns: { colIndex: { name, prefix, suffix } }
+    rowStyleOverrides: {},  // For storing per-row style overrides
+    columnStyleOverrides: {}, // For storing per-column style overrides
+    styleOverrides: {} // For tracking all named style overrides
   };
 
   // Initialize tabs
@@ -78,6 +86,26 @@ document.addEventListener('DOMContentLoaded', () => {
       button.classList.add('active');
       
       // Show corresponding content
+      const tabId = button.getAttribute('data-tab');
+      document.getElementById(`${tabId}-tab`).classList.add('active');
+    });
+  });
+
+  // Add event listener for style detail modal close button
+  if (styleDetailCloseBtn) {
+    styleDetailCloseBtn.addEventListener('click', () => hideModal(styleDetailModal));
+  }
+
+  // Add tab functionality for row/column overrides
+  const overrideTabButtons = document.querySelectorAll('#rowColumnStyles .tab-button');
+  const overrideTabContents = document.querySelectorAll('#rowColumnStyles .tab-content');
+  
+  overrideTabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      overrideTabButtons.forEach(btn => btn.classList.remove('active'));
+      overrideTabContents.forEach(content => content.classList.remove('active'));
+      
+      button.classList.add('active');
       const tabId = button.getAttribute('data-tab');
       document.getElementById(`${tabId}-tab`).classList.add('active');
     });
@@ -136,14 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
     currentState.columns = columns;
     currentState.cellWidth = cellWidth;
     currentState.cellHeight = cellHeight;
+    
+    // Update row/column style overrides
+    updateRowColumnStyleOverrides();
 
     // Create the grids
     createPromptGrid();
     createImageGrid();
-    
-    // Update style override lists
-    createRowStyleOverridesList();
-    createColStyleOverridesList();
     
     // Update spritesheet preview
     updateSpritesheetPreview();
@@ -189,121 +216,69 @@ document.addEventListener('DOMContentLoaded', () => {
     promptGridElement.innerHTML = '';
     promptGridElement.style.gridTemplateColumns = `repeat(${currentState.columns}, 1fr)`;
     
-    // Add row headers (if any have style overrides)
-    const hasRowStyles = Object.keys(currentState.rowStyles).length > 0;
-    
-    // Create column headers if needed
-    if (Object.keys(currentState.colStyles).length > 0) {
-      const headerRow = document.createElement('div');
-      headerRow.style.display = 'grid';
-      headerRow.style.gridTemplateColumns = `repeat(${currentState.columns}, 1fr)`;
-      headerRow.style.marginBottom = '10px';
-      
-      // Empty cell for top-left corner if we have row headers
-      if (hasRowStyles) {
-        const cornerCell = document.createElement('div');
-        cornerCell.style.width = '30px';
-        promptGridElement.appendChild(cornerCell);
-      }
-      
-      // Create column headers
-      for (let col = 0; col < currentState.columns; col++) {
-        const colHeader = document.createElement('div');
-        colHeader.className = 'header-col';
-        colHeader.textContent = `Col ${col+1}`;
-        
-        // Add style override indicator
-        if (currentState.colStyles[col]) {
-          const style = currentState.colStyles[col];
-          colHeader.innerHTML += `<span class="header-override-indicator" title="${style.name}">⚙️</span>`;
-          colHeader.title = `Style: ${style.name}\nPrefix: ${style.prefix}\nSuffix: ${style.suffix}`;
-        }
-        
-        headerRow.appendChild(colHeader);
-      }
-      
-      promptGridElement.appendChild(headerRow);
-    }
-    
     for (let row = 0; row < currentState.rows; row++) {
-      // Add row header if needed
-      if (hasRowStyles) {
-        const rowHeader = document.createElement('div');
-        rowHeader.className = 'header-row';
-        rowHeader.textContent = `Row ${row+1}`;
-        
-        // Add style override indicator
-        if (currentState.rowStyles[row]) {
-          const style = currentState.rowStyles[row];
-          rowHeader.innerHTML += `<span class="header-override-indicator" title="${style.name}">⚙️</span>`;
-          rowHeader.title = `Style: ${style.name}\nPrefix: ${style.prefix}\nSuffix: ${style.suffix}`;
-        }
-        
-        promptGridElement.appendChild(rowHeader);
-      }
-      
       for (let col = 0; col < currentState.columns; col++) {
         const cellIndex = row * currentState.columns + col;
         const cell = currentState.cells[cellIndex];
         
         const cellElement = document.createElement('div');
         cellElement.className = 'grid-cell prompt-cell';
-        
-        // Add classes if this cell is in a row or column with a style override
-        if (currentState.rowStyles[row]) {
-          cellElement.classList.add('row-style-highlight');
-        }
-        if (currentState.colStyles[col]) {
-          cellElement.classList.add('col-style-highlight');
-        }
-        if (currentState.rowStyles[row] || currentState.colStyles[col]) {
-          cellElement.classList.add('overridden-cell');
-          
-          // Create tooltip for style override info
-          const tooltip = document.createElement('div');
-          tooltip.className = 'override-tooltip';
-          
-          let tooltipContent = '<div class="tooltip-style-name">Style Overrides</div>';
-          
-          if (currentState.rowStyles[row]) {
-            const rowStyle = currentState.rowStyles[row];
-            tooltipContent += `
-              <div class="tooltip-style-content">
-                <div class="tooltip-style-label">Row ${row+1} Style: ${rowStyle.name}</div>
-                <div class="tooltip-style-text">Prefix: ${rowStyle.prefix}</div>
-                <div class="tooltip-style-text">Suffix: ${rowStyle.suffix}</div>
-              </div>
-            `;
-          }
-          
-          if (currentState.colStyles[col]) {
-            const colStyle = currentState.colStyles[col];
-            tooltipContent += `
-              <div class="tooltip-style-content">
-                <div class="tooltip-style-label">Column ${col+1} Style: ${colStyle.name}</div>
-                <div class="tooltip-style-text">Prefix: ${colStyle.prefix}</div>
-                <div class="tooltip-style-text">Suffix: ${colStyle.suffix}</div>
-              </div>
-            `;
-          }
-          
-          tooltip.innerHTML = tooltipContent;
-          cellElement.appendChild(tooltip);
-          
-          // Add override indicator
-          const indicator = document.createElement('div');
-          indicator.className = 'override-indicator';
-          indicator.textContent = '⚙️ Style';
-          cellElement.appendChild(indicator);
-        }
-        
         cellElement.dataset.row = row;
         cellElement.dataset.col = col;
         cellElement.dataset.index = cellIndex;
         
+        // Add data attributes for style overrides
+        const hasRowOverride = !!currentState.rowStyleOverrides[row];
+        const hasColOverride = !!currentState.columnStyleOverrides[col];
+        
+        if (hasRowOverride) {
+          cellElement.dataset.rowOverride = "true";
+        }
+        
+        if (hasColOverride) {
+          cellElement.dataset.colOverride = "true";
+        }
+        
         const label = document.createElement('div');
         label.className = 'prompt-cell-label';
         label.textContent = `Cell (${row + 1}, ${col + 1})`;
+        
+        // Add style tags to show which styles are applied
+        const promptTags = document.createElement('div');
+        promptTags.className = 'prompt-tags';
+        
+        if (hasRowOverride) {
+          const rowStyle = currentState.rowStyleOverrides[row];
+          const rowTag = document.createElement('span');
+          rowTag.className = 'prompt-tag row-tag';
+          rowTag.textContent = `Row ${row + 1}: ${rowStyle.name || 'Custom Style'}`;
+          rowTag.addEventListener('click', () => showStyleDetails(rowStyle));
+          promptTags.appendChild(rowTag);
+        }
+        
+        if (hasColOverride) {
+          const colStyle = currentState.columnStyleOverrides[col];
+          const colTag = document.createElement('span');
+          colTag.className = 'prompt-tag col-tag';
+          colTag.textContent = `Col ${col + 1}: ${colStyle.name || 'Custom Style'}`;
+          colTag.addEventListener('click', () => showStyleDetails(colStyle));
+          promptTags.appendChild(colTag);
+        }
+        
+        // Create a visual representation of the full prompt
+        const promptPreview = document.createElement('div');
+        promptPreview.className = 'cell-prompt-preview';
+        promptPreview.textContent = getFullPromptForCell(row, col, cell.prompt);
+        
+        const promptToggle = document.createElement('span');
+        promptToggle.className = 'cell-prompt-preview-toggle';
+        promptToggle.textContent = 'Show full prompt';
+        promptToggle.addEventListener('click', (e) => {
+          promptPreview.classList.toggle('expanded');
+          promptToggle.textContent = promptPreview.classList.contains('expanded') ? 
+            'Hide full prompt' : 'Show full prompt';
+          e.stopPropagation();
+        });
         
         const textarea = document.createElement('textarea');
         textarea.placeholder = 'Enter prompt for this cell...';
@@ -311,6 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
         textarea.addEventListener('input', (e) => {
           const index = parseInt(cellElement.dataset.index);
           currentState.cells[index].prompt = e.target.value;
+          // Update prompt preview
+          promptPreview.textContent = getFullPromptForCell(row, col, e.target.value);
         });
         
         const generateBtn = document.createElement('button');
@@ -319,7 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
         generateBtn.addEventListener('click', () => handleGenerateCell(cellIndex));
         
         cellElement.appendChild(label);
+        if (hasRowOverride || hasColOverride) {
+          cellElement.appendChild(promptTags);
+        }
         cellElement.appendChild(textarea);
+        cellElement.appendChild(promptPreview);
+        cellElement.appendChild(promptToggle);
         cellElement.appendChild(generateBtn);
         
         // Add hover effect to highlight corresponding cells
@@ -331,75 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function createImageGrid() {
-    imageGridElement.innerHTML = '';
-    imageGridElement.style.gridTemplateColumns = `repeat(${currentState.columns}, 1fr)`;
-    
-    // Calculate cell size based on available space and grid dimensions
-    const containerWidth = imageGridElement.clientWidth || 600;
-    const maxCellSize = Math.floor(containerWidth / currentState.columns) - 20; // Subtract for gap
-    const cellSize = Math.min(maxCellSize, 200); // Cap at 200px max
-    
-    for (let row = 0; row < currentState.rows; row++) {
-      for (let col = 0; col < currentState.columns; col++) {
-        const cellIndex = row * currentState.columns + col;
-        const cell = currentState.cells[cellIndex];
-        
-        const cellElement = document.createElement('div');
-        cellElement.className = 'grid-cell image-cell';
-        cellElement.dataset.row = row;
-        cellElement.dataset.col = col;
-        cellElement.dataset.index = cellIndex;
-        cellElement.style.width = `${cellSize}px`;
-        cellElement.style.height = `${cellSize}px`;
-        
-        if (cell.isGenerating) {
-          const loadingDiv = document.createElement('div');
-          loadingDiv.className = 'loading';
-          
-          const spinner = document.createElement('div');
-          spinner.className = 'spinner';
-          
-          const loadingText = document.createElement('p');
-          loadingText.textContent = 'Generating...';
-          
-          loadingDiv.appendChild(spinner);
-          loadingDiv.appendChild(loadingText);
-          cellElement.appendChild(loadingDiv);
-        } else if (cell.imageUrl) {
-          const img = document.createElement('img');
-          img.className = 'image-preview';
-          img.src = cell.localUrl || cell.imageUrl; // Use the local URL if available
-          img.alt = `Generated image for cell (${row + 1}, ${col + 1})`;
-          cellElement.appendChild(img);
-        } else {
-          const placeholder = document.createElement('div');
-          placeholder.className = 'image-placeholder';
-          placeholder.textContent = 'No image generated yet';
-          cellElement.appendChild(placeholder);
-        }
-        
-        if (cell.error) {
-          const errorMsg = document.createElement('div');
-          errorMsg.className = 'error-message';
-          errorMsg.textContent = cell.error;
-          cellElement.appendChild(errorMsg);
-          
-          const retryBtn = document.createElement('button');
-          retryBtn.className = 'cell-button primary-button';
-          retryBtn.textContent = 'Retry';
-          retryBtn.addEventListener('click', () => handleGenerateCell(cellIndex));
-          cellElement.appendChild(retryBtn);
-        }
-        
-        // Add hover effect to highlight corresponding cells
-        cellElement.addEventListener('mouseenter', () => highlightCells(row, col));
-        cellElement.addEventListener('mouseleave', () => unhighlightCells());
-        
-        imageGridElement.appendChild(cellElement);
-      }
-    }
-  }
+  // ... existing code ...
 
   function highlightCells(row, col) {
     const promptCells = promptGridElement.querySelectorAll('.grid-cell');
@@ -418,199 +332,371 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function unhighlightCells() {
-    const highlightedCells = document.querySelectorAll('.highlight');
-    highlightedCells.forEach(cell => cell.classList.remove('highlight'));
-  }
+  // ... existing code ...
 
-  // Event handlers
-  function handleUpdateGrid() {
-    // Save existing cell data and style overrides before updating grid
-    const oldCells = [...currentState.cells];
-    const oldRows = currentState.rows;
-    const oldColumns = currentState.columns;
-    const oldRowStyles = {...currentState.rowStyles};
-    const oldColStyles = {...currentState.colStyles};
-    
-    createGrids();
-    updateDownloadResolutionInfo();
-    
-    // Restore cell prompts that still exist in the new grid
-    if (oldCells.length > 0) {
-      currentState.cells.forEach((cell) => {
-        // Find if this cell existed in the old grid
-        if (cell.row < oldRows && cell.col < oldColumns) {
-          const oldCellIndex = cell.row * oldColumns + cell.col;
-          if (oldCellIndex < oldCells.length) {
-            cell.prompt = oldCells[oldCellIndex].prompt;
-          }
-        }
-      });
-      
-      // Restore row style overrides that still exist
-      currentState.rowStyles = {};
-      for (const row in oldRowStyles) {
-        if (row < currentState.rows) {
-          currentState.rowStyles[row] = oldRowStyles[row];
-        }
-      }
-      
-      // Restore column style overrides that still exist
-      currentState.colStyles = {};
-      for (const col in oldColStyles) {
-        if (col < currentState.columns) {
-          currentState.colStyles[col] = oldColStyles[col];
-        }
-      }
-      
-      // Update the prompt grid to show the restored values
-      createPromptGrid();
-      
-      // Update the row/column style override lists
-      createRowStyleOverridesList();
-      createColStyleOverridesList();
-    }
-  }
-
-  function handleGenerateAll() {
-    const totalCells = currentState.rows * currentState.columns;
-    
-    if (currentState.isGenerating) {
-      showError("Image generation is already in progress. Please wait.");
-      return;
-    }
-    
-    if (!validatePrompts()) {
-      return;
-    }
-    
-    showModal(confirmationModal);
-    confirmationTitle.textContent = "Generate All Images";
-    confirmationMessage.textContent = `This will generate ${totalCells} images. Do you want to proceed?`;
-    
-    // The confirmation handler will call generateAllCells()
-    confirmationCallback = generateAllCells;
-  }
-
-  function handleGenerateCell(cellIndex) {
-    if (currentState.isGenerating) {
-      showError("Image generation is already in progress. Please wait.");
-      return;
-    }
-    
-    if (!validatePrompts(cellIndex)) {
-      return;
-    }
-    
-    generateCell(cellIndex);
-  }
-
-  function handleResetAll() {
-    showModal(confirmationModal);
-    confirmationTitle.textContent = "Reset All";
-    confirmationMessage.textContent = "This will clear all prompts and generated images. Are you sure?";
-    
-    // The confirmation handler will call resetAll()
-    confirmationCallback = resetAll;
-  }
-
-  function handleDownload() {
-    if (!canDownloadSpritesheet()) {
-      showError("Please generate all images before downloading the spritesheet.");
-      return;
-    }
-    
-    const scale = parseFloat(downloadScaleInput.value) || 1.0;
-    downloadSpritesheet(scale);
+  // Functions for row/column style overrides
+  function updateRowColumnStyleOverrides() {
+    createRowStyleOverridesUI();
+    createColumnStyleOverridesUI();
   }
   
-  let confirmationCallback = null;
-  function handleConfirmation() {
-    hideModal(confirmationModal);
-    if (confirmationCallback) {
-      confirmationCallback();
-      confirmationCallback = null;
-    }
-  }
-
-  // Validation functions
-  function validatePrompts(cellIndex = null) {
-    const prefix = prefixPromptInput.value.trim();
-    const suffix = suffixPromptInput.value.trim();
+  function createRowStyleOverridesUI() {
+    rowStyleOverridesContainer.innerHTML = '';
     
-    if (cellIndex !== null) {
-      // Validate single cell
-      const cell = currentState.cells[cellIndex];
-      if (!cell.prompt.trim()) {
-        showError(`Please enter a prompt for cell (${cell.row + 1}, ${cell.col + 1}).`);
-        return false;
+    for (let row = 0; row < currentState.rows; row++) {
+      const rowOverride = currentState.rowStyleOverrides[row] || null;
+      
+      const overrideRow = document.createElement('div');
+      overrideRow.className = 'override-row';
+      overrideRow.classList.toggle('active', !!rowOverride);
+      
+      const overrideLabel = document.createElement('div');
+      overrideLabel.className = 'override-label';
+      overrideLabel.textContent = `Row ${row + 1}`;
+      
+      const overrideControls = document.createElement('div');
+      overrideControls.className = 'override-controls';
+      
+      const overrideToggle = document.createElement('div');
+      overrideToggle.className = 'override-toggle';
+      
+      const overrideCheckbox = document.createElement('input');
+      overrideCheckbox.type = 'checkbox';
+      overrideCheckbox.id = `row-override-${row}`;
+      overrideCheckbox.checked = !!rowOverride;
+      
+      const overrideToggleLabel = document.createElement('label');
+      overrideToggleLabel.htmlFor = `row-override-${row}`;
+      overrideToggleLabel.textContent = 'Override Style';
+      
+      overrideToggle.appendChild(overrideCheckbox);
+      overrideToggle.appendChild(overrideToggleLabel);
+      
+      overrideControls.appendChild(overrideToggle);
+      
+      if (rowOverride) {
+        const styleName = document.createElement('span');
+        styleName.className = 'style-name';
+        styleName.textContent = rowOverride.name || 'Custom Style';
+        styleName.addEventListener('click', () => showStyleDetails(rowOverride));
+        
+        overrideControls.appendChild(styleName);
       }
-    } else {
-      // Validate all cells
-      for (const cell of currentState.cells) {
-        if (!cell.prompt.trim()) {
-          showError(`Please enter a prompt for cell (${cell.row + 1}, ${cell.col + 1}).`);
-          return false;
+      
+      const overrideInputs = document.createElement('div');
+      overrideInputs.className = 'override-inputs';
+      if (rowOverride) overrideInputs.classList.add('show');
+      
+      // Prefix input
+      const prefixGroup = document.createElement('div');
+      prefixGroup.className = 'override-input';
+      
+      const prefixLabel = document.createElement('label');
+      prefixLabel.textContent = 'Row Prefix:';
+      
+      const prefixInput = document.createElement('textarea');
+      prefixInput.placeholder = 'Enter prefix prompt for this row...';
+      prefixInput.value = rowOverride?.prefix || '';
+      
+      prefixGroup.appendChild(prefixLabel);
+      prefixGroup.appendChild(prefixInput);
+      
+      // Suffix input
+      const suffixGroup = document.createElement('div');
+      suffixGroup.className = 'override-input';
+      
+      const suffixLabel = document.createElement('label');
+      suffixLabel.textContent = 'Row Suffix:';
+      
+      const suffixInput = document.createElement('textarea');
+      suffixInput.placeholder = 'Enter suffix prompt for this row...';
+      suffixInput.value = rowOverride?.suffix || '';
+      
+      suffixGroup.appendChild(suffixLabel);
+      suffixGroup.appendChild(suffixInput);
+      
+      // Name input
+      const nameGroup = document.createElement('div');
+      nameGroup.className = 'override-input';
+      
+      const nameLabel = document.createElement('label');
+      nameLabel.textContent = 'Style Name:';
+      
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = 'Name this style (optional)';
+      nameInput.value = rowOverride?.name || '';
+      
+      nameGroup.appendChild(nameLabel);
+      nameGroup.appendChild(nameInput);
+      
+      // Add save button
+      const saveButton = document.createElement('button');
+      saveButton.className = 'secondary-button';
+      saveButton.textContent = 'Apply Style';
+      saveButton.addEventListener('click', () => {
+        if (overrideCheckbox.checked) {
+          // Save the style override
+          currentState.rowStyleOverrides[row] = {
+            prefix: prefixInput.value,
+            suffix: suffixInput.value,
+            name: nameInput.value || `Row ${row + 1} Style`
+          };
+          
+          // If style has a name, save it to styleOverrides for reuse
+          if (nameInput.value) {
+            currentState.styleOverrides[nameInput.value] = {
+              prefix: prefixInput.value,
+              suffix: suffixInput.value,
+              name: nameInput.value
+            };
+          }
+          
+          overrideRow.classList.add('active');
+        } else {
+          // Remove the style override
+          delete currentState.rowStyleOverrides[row];
+          overrideRow.classList.remove('active');
         }
-      }
-    }
-    
-    return true;
-  }
-
-  function canDownloadSpritesheet() {
-    // Check if all cells have generated images
-    return currentState.cells.every(cell => cell.imageUrl !== null);
-  }
-
-  // Image generation functions
-  async function generateImage(prompt) {
-    try {
-      // Use the websim.imageGen function from the integration
-      const result = await websim.imageGen({
-        prompt: prompt,
-        width: currentState.cellWidth,
-        height: currentState.cellHeight
+        
+        // Update the prompt grid to reflect changes
+        createPromptGrid();
       });
       
-      // After getting the result, fetch the image as a blob and create a local URL
-      try {
-        const response = await fetch(result.url);
-        const blob = await response.blob();
-        const objectURL = URL.createObjectURL(blob);
-        return { ...result, localUrl: objectURL };
-      } catch (error) {
-        console.warn('Failed to create local URL for image:', error);
-        return result;
-      }
-    } catch (error) {
-      console.error('Image generation API error:', error);
-      throw new Error('Failed to generate image. Please try again later.');
+      overrideInputs.appendChild(prefixGroup);
+      overrideInputs.appendChild(suffixGroup);
+      overrideInputs.appendChild(nameGroup);
+      overrideInputs.appendChild(saveButton);
+      
+      // Show/hide inputs when checkbox is toggled
+      overrideCheckbox.addEventListener('change', () => {
+        if (overrideCheckbox.checked) {
+          overrideInputs.classList.add('show');
+        } else {
+          overrideInputs.classList.remove('show');
+        }
+      });
+      
+      overrideRow.appendChild(overrideLabel);
+      overrideRow.appendChild(overrideControls);
+      overrideRow.appendChild(overrideInputs);
+      
+      rowStyleOverridesContainer.appendChild(overrideRow);
     }
   }
+  
+  function createColumnStyleOverridesUI() {
+    columnStyleOverridesContainer.innerHTML = '';
+    
+    for (let col = 0; col < currentState.columns; col++) {
+      const colOverride = currentState.columnStyleOverrides[col] || null;
+      
+      const overrideRow = document.createElement('div');
+      overrideRow.className = 'override-row';
+      overrideRow.classList.toggle('active', !!colOverride);
+      
+      const overrideLabel = document.createElement('div');
+      overrideLabel.className = 'override-label';
+      overrideLabel.textContent = `Column ${col + 1}`;
+      
+      const overrideControls = document.createElement('div');
+      overrideControls.className = 'override-controls';
+      
+      const overrideToggle = document.createElement('div');
+      overrideToggle.className = 'override-toggle';
+      
+      const overrideCheckbox = document.createElement('input');
+      overrideCheckbox.type = 'checkbox';
+      overrideCheckbox.id = `col-override-${col}`;
+      overrideCheckbox.checked = !!colOverride;
+      
+      const overrideToggleLabel = document.createElement('label');
+      overrideToggleLabel.htmlFor = `col-override-${col}`;
+      overrideToggleLabel.textContent = 'Override Style';
+      
+      overrideToggle.appendChild(overrideCheckbox);
+      overrideToggle.appendChild(overrideToggleLabel);
+      
+      overrideControls.appendChild(overrideToggle);
+      
+      if (colOverride) {
+        const styleName = document.createElement('span');
+        styleName.className = 'style-name';
+        styleName.textContent = colOverride.name || 'Custom Style';
+        styleName.addEventListener('click', () => showStyleDetails(colOverride));
+        
+        overrideControls.appendChild(styleName);
+      }
+      
+      const overrideInputs = document.createElement('div');
+      overrideInputs.className = 'override-inputs';
+      if (colOverride) overrideInputs.classList.add('show');
+      
+      // Prefix input
+      const prefixGroup = document.createElement('div');
+      prefixGroup.className = 'override-input';
+      
+      const prefixLabel = document.createElement('label');
+      prefixLabel.textContent = 'Column Prefix:';
+      
+      const prefixInput = document.createElement('textarea');
+      prefixInput.placeholder = 'Enter prefix prompt for this column...';
+      prefixInput.value = colOverride?.prefix || '';
+      
+      prefixGroup.appendChild(prefixLabel);
+      prefixGroup.appendChild(prefixInput);
+      
+      // Suffix input
+      const suffixGroup = document.createElement('div');
+      suffixGroup.className = 'override-input';
+      
+      const suffixLabel = document.createElement('label');
+      suffixLabel.textContent = 'Column Suffix:';
+      
+      const suffixInput = document.createElement('textarea');
+      suffixInput.placeholder = 'Enter suffix prompt for this column...';
+      suffixInput.value = colOverride?.suffix || '';
+      
+      suffixGroup.appendChild(suffixLabel);
+      suffixGroup.appendChild(suffixInput);
+      
+      // Name input
+      const nameGroup = document.createElement('div');
+      nameGroup.className = 'override-input';
+      
+      const nameLabel = document.createElement('label');
+      nameLabel.textContent = 'Style Name:';
+      
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = 'Name this style (optional)';
+      nameInput.value = colOverride?.name || '';
+      
+      nameGroup.appendChild(nameLabel);
+      nameGroup.appendChild(nameInput);
+      
+      // Add save button
+      const saveButton = document.createElement('button');
+      saveButton.className = 'secondary-button';
+      saveButton.textContent = 'Apply Style';
+      saveButton.addEventListener('click', () => {
+        if (overrideCheckbox.checked) {
+          // Save the style override
+          currentState.columnStyleOverrides[col] = {
+            prefix: prefixInput.value,
+            suffix: suffixInput.value,
+            name: nameInput.value || `Column ${col + 1} Style`
+          };
+          
+          // If style has a name, save it to styleOverrides for reuse
+          if (nameInput.value) {
+            currentState.styleOverrides[nameInput.value] = {
+              prefix: prefixInput.value,
+              suffix: suffixInput.value,
+              name: nameInput.value
+            };
+          }
+          
+          overrideRow.classList.add('active');
+        } else {
+          // Remove the style override
+          delete currentState.columnStyleOverrides[col];
+          overrideRow.classList.remove('active');
+        }
+        
+        // Update the prompt grid to reflect changes
+        createPromptGrid();
+      });
+      
+      overrideInputs.appendChild(prefixGroup);
+      overrideInputs.appendChild(suffixGroup);
+      overrideInputs.appendChild(nameGroup);
+      overrideInputs.appendChild(saveButton);
+      
+      // Show/hide inputs when checkbox is toggled
+      overrideCheckbox.addEventListener('change', () => {
+        if (overrideCheckbox.checked) {
+          overrideInputs.classList.add('show');
+        } else {
+          overrideInputs.classList.remove('show');
+        }
+      });
+      
+      overrideRow.appendChild(overrideLabel);
+      overrideRow.appendChild(overrideControls);
+      overrideRow.appendChild(overrideInputs);
+      
+      columnStyleOverridesContainer.appendChild(overrideRow);
+    }
+  }
+  
+  function showStyleDetails(style) {
+    if (!style) return;
+    
+    styleDetailTitle.textContent = style.name || 'Style Details';
+    styleDetailPrefix.textContent = style.prefix || '(none)';
+    styleDetailSuffix.textContent = style.suffix || '(none)';
+    
+    showModal(styleDetailModal);
+  }
+  
+  function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
+    const globalPrefix = prefixPromptInput.value.trim();
+    const globalSuffix = suffixPromptInput.value.trim();
+    
+    const rowOverride = currentState.rowStyleOverrides[rowIndex];
+    const colOverride = currentState.columnStyleOverrides[colIndex];
+    
+    const prefixParts = [];
+    const suffixParts = [];
+    
+    // Add column prefix if it exists
+    if (colOverride && colOverride.prefix) {
+      prefixParts.push(colOverride.prefix.trim());
+    } else if (globalPrefix) {
+      prefixParts.push(globalPrefix);
+    }
+    
+    // Add row prefix if it exists
+    if (rowOverride && rowOverride.prefix) {
+      prefixParts.push(rowOverride.prefix.trim());
+    } else if (!colOverride?.prefix && globalPrefix && prefixParts.length === 0) {
+      prefixParts.push(globalPrefix);
+    }
+    
+    // Add column suffix if it exists
+    if (colOverride && colOverride.suffix) {
+      suffixParts.push(colOverride.suffix.trim());
+    } else if (globalSuffix) {
+      suffixParts.push(globalSuffix);
+    }
+    
+    // Add row suffix if it exists
+    if (rowOverride && rowOverride.suffix) {
+      suffixParts.push(rowOverride.suffix.trim());
+    } else if (!colOverride?.suffix && globalSuffix && suffixParts.length === 0) {
+      suffixParts.push(globalSuffix);
+    }
+    
+    // Build the final prompt
+    const prefix = prefixParts.join(' ');
+    const suffix = suffixParts.join(' ');
+    
+    let finalPrompt = '';
+    if (prefix) finalPrompt += `${prefix} `;
+    finalPrompt += cellPrompt.trim();
+    if (suffix) finalPrompt += ` ${suffix}`;
+    
+    return finalPrompt.trim();
+  }
+
+  // ... existing code ...
 
   async function generateCell(cellIndex, updateUI = true) {
     const cell = currentState.cells[cellIndex];
     const row = cell.row;
     const col = cell.col;
-    
-    // Get default prefix and suffix
-    let prefix = prefixPromptInput.value.trim();
-    let suffix = suffixPromptInput.value.trim();
-    
-    // Apply row style overrides
-    if (currentState.rowStyles[row]) {
-      prefix = (currentState.rowStyles[row].prefix + " " + prefix).trim();
-      suffix = (suffix + " " + currentState.rowStyles[row].suffix).trim();
-    }
-    
-    // Apply column style overrides
-    if (currentState.colStyles[col]) {
-      prefix = (currentState.colStyles[col].prefix + " " + prefix).trim();
-      suffix = (suffix + " " + currentState.colStyles[col].suffix).trim();
-    }
-    
-    const prompt = `${prefix} ${cell.prompt.trim()} ${suffix}`.trim();
+    const prompt = getFullPromptForCell(row, col, cell.prompt);
     
     // Update cell state
     cell.isGenerating = true;
@@ -645,428 +731,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function generateAllCells() {
-    currentState.isGenerating = true;
-    updateUIForGeneration(true);
-    
-    const totalCells = currentState.cells.length;
-    let completedCells = 0;
-    let hasErrors = false;
-    
-    showModal(progressModal);
-    updateProgress(completedCells, totalCells);
-    
-    for (let i = 0; i < totalCells; i++) {
-      try {
-        progressMessage.textContent = `Generating image ${completedCells + 1} of ${totalCells}`;
-        await generateCell(i, false); // false = don't update UI for each cell (we'll do it once at the end)
-        completedCells++;
-        updateProgress(completedCells, totalCells);
-      } catch (error) {
-        console.error(`Error generating cell ${i}:`, error);
-        currentState.cells[i].error = "Generation failed";
-        hasErrors = true;
-        completedCells++;
-        updateProgress(completedCells, totalCells);
-      }
-    }
-    
-    currentState.isGenerating = false;
-    hideModal(progressModal);
-    updateUIForGeneration(false);
-    
-    // Update the UI after all generations are complete
-    createImageGrid();
-    updateSpritesheetPreview(); // Update spritesheet preview after all cells are generated
-    
-    if (hasErrors) {
-      showError("Some images failed to generate. You can retry individual cells.");
-    } else {
-      // Enable download button
-      downloadBtn.disabled = false;
-    }
-  }
+  // ... existing code ...
 
-  function updateProgress(completed, total) {
-    const percentage = (completed / total) * 100;
-    progressBar.style.width = `${percentage}%`;
-    progressMessage.textContent = `Generating image ${completed} of ${total}`;
-  }
-
-  // Spritesheet functions
-  function downloadSpritesheet(scale = 1.0) {
-    // Use the current preview canvas instead of creating a new one
-    const canvas = spritesheetPreview.querySelector('canvas');
-    
-    if (!canvas) {
-      showError("Please generate a spritesheet preview first.");
-      return;
-    }
-    
-    // Create a temporary canvas for scaling if needed
-    let downloadCanvas = canvas;
-    if (scale !== 1.0) {
-      downloadCanvas = document.createElement('canvas');
-      const ctx = downloadCanvas.getContext('2d');
-      downloadCanvas.width = canvas.width * scale;
-      downloadCanvas.height = canvas.height * scale;
-      ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, downloadCanvas.width, downloadCanvas.height);
-    }
-    
-    // Convert canvas to downloadable data URL
-    const dataUrl = downloadCanvas.toDataURL('image/png');
-    
-    // Create a download link
-    const downloadLink = document.createElement('a');
-    downloadLink.href = dataUrl;
-    downloadLink.download = 'spritesheet.png';
-    
-    // Trigger the download
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-  }
-
-  function updateSpritesheetPreview() {
-    // Clear the current preview
-    spritesheetPreview.innerHTML = '';
-    
-    // Check if we have any generated images
-    const hasImages = currentState.cells.some(cell => cell.imageUrl);
-    
-    if (!hasImages) {
-      const emptyMessage = document.createElement('p');
-      emptyMessage.className = 'empty-message';
-      emptyMessage.textContent = 'Generate images to create a spritesheet';
-      spritesheetPreview.appendChild(emptyMessage);
-      return;
-    }
-    
-    // Create the canvas for the spritesheet with exact dimensions
-    const canvas = document.createElement('canvas');
-    canvas.width = currentState.columns * currentState.cellWidth;
-    canvas.height = currentState.rows * currentState.cellHeight;
-    
-    setupCanvasZoomToggle(canvas);
-    
-    const ctx = canvas.getContext('2d');
-    
-    // Add the canvas to the preview
-    spritesheetPreview.appendChild(canvas);
-    
-    // Load and draw all available images
-    drawSpritesheetOnCanvas(canvas, ctx);
-    
-    // Setup eyedropper for the canvas
-    backgroundRemover.setupEyedropper(canvas, colorToRemoveInput, eyedropperToggle);
-  }
-
-  function drawSpritesheetOnCanvas(canvas, ctx) {
-    let loadedImages = 0;
-    const totalCells = currentState.cells.length;
-    const images = [];
-    
-    // Initialize the image array
-    for (let i = 0; i < totalCells; i++) {
-      images[i] = null;
-    }
-    
-    // Load all images
-    currentState.cells.forEach((cell, index) => {
-      if (cell.imageUrl) {
-        const img = new Image();
-        
-        // Use the local URL to avoid CORS issues
-        if (cell.localUrl) {
-          img.src = cell.localUrl;
-        } else {
-          // For backward compatibility, try to draw from the displayed image
-          try {
-            const imageCell = document.querySelector(`.image-cell[data-row="${cell.row}"][data-col="${cell.col}"] img`);
-            if (imageCell) {
-              img.src = imageCell.src;
-            } else {
-              console.warn(`No image element found for cell (${cell.row + 1}, ${cell.col + 1}), skipping`);
-              loadedImages++;
-              return;
-            }
-          } catch (e) {
-            console.warn('Failed to find image element, skipping cell', e);
-            loadedImages++;
-            return;
-          }
-        }
-        
-        img.onload = () => {
-          images[index] = img;
-          loadedImages++;
-          
-          // Once all images are loaded, draw them on the canvas
-          if (loadedImages === currentState.cells.filter(c => c.imageUrl).length) {
-            drawImagesOnCanvas(ctx, images);
-          }
-        };
-        
-        img.onerror = () => {
-          console.error(`Failed to load image for cell (${cell.row + 1}, ${cell.col + 1})`);
-          loadedImages++;
-          
-          // Continue even if some images fail to load
-          if (loadedImages === currentState.cells.filter(c => c.imageUrl).length) {
-            drawImagesOnCanvas(ctx, images);
-          }
-        };
-      }
-    });
-  }
-
-  function drawImagesOnCanvas(ctx, images) {
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    
-    // Draw each image in its proper position
-    currentState.cells.forEach((cell, index) => {
-      if (images[index]) {
-        const x = cell.col * currentState.cellWidth;
-        const y = cell.row * currentState.cellHeight;
-        ctx.drawImage(images[index], x, y, currentState.cellWidth, currentState.cellHeight);
-      }
-    });
-  }
-
-  function setupCanvasZoomToggle(canvas) {
-    if (canvas.width > spritesheetPreview.clientWidth) {
-      canvas.style.cursor = currentState.canvasFullSize ? 'zoom-out' : 'zoom-in';
-      canvas.style.width = currentState.canvasFullSize ? 'auto' : '100%';
-      
-      // Remove any existing click event listener
-      canvas.removeEventListener('click', canvasZoomToggleHandler);
-      
-      // Add click event to toggle zoom
-      canvas.addEventListener('click', canvasZoomToggleHandler);
-    } else {
-      canvas.style.cursor = 'default';
-    }
-  }
-
-  function canvasZoomToggleHandler() {
-    currentState.canvasFullSize = !currentState.canvasFullSize;
-    this.style.cursor = currentState.canvasFullSize ? 'zoom-out' : 'zoom-in';
-    this.style.width = currentState.canvasFullSize ? 'auto' : '100%';
-  }
-
-  // Reset function
-  function resetAll() {
-    // Reset all cell data
-    currentState.cells.forEach(cell => {
-      cell.prompt = '';
-      cell.imageUrl = null;
-      cell.localUrl = null;
-      cell.isGenerating = false;
-      cell.error = null;
-    });
-    
-    // Reset global prompts
-    prefixPromptInput.value = '';
-    suffixPromptInput.value = '';
-    
-    // Reset style overrides
-    currentState.rowStyles = {};
-    currentState.colStyles = {};
-    
-    // Reset UI
-    createPromptGrid();
-    createImageGrid();
-    updateSpritesheetPreview();
-    createRowStyleOverridesList();
-    createColStyleOverridesList();
-    
-    // Disable download button
-    downloadBtn.disabled = true;
-  }
-
-  // UI helper functions
-  function showError(message) {
-    alert(message); // Simple alert for errors - could be replaced with a nicer UI
-  }
-
-  function showModal(modal) {
-    modal.style.display = 'flex';
-  }
-
-  function hideModal(modal) {
-    modal.style.display = 'none';
-  }
-
-  // Theme functions
-  function initTheme() {
-    // Check for saved preference or system preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.body.classList.add('dark-mode');
-      currentState.darkMode = true;
-      document.getElementById('themeToggle').textContent = '☀️';
-    } else {
-      document.getElementById('themeToggle').textContent = '🌙';
-    }
-  }
-
-  function toggleTheme() {
-    currentState.darkMode = !currentState.darkMode;
-    document.body.classList.toggle('dark-mode');
-    
-    if (currentState.darkMode) {
-      localStorage.setItem('theme', 'dark');
-      document.getElementById('themeToggle').textContent = '☀️';
-    } else {
-      localStorage.setItem('theme', 'light');
-      document.getElementById('themeToggle').textContent = '🌙';
-    }
-  }
-
-  function updateUIForGeneration(isGenerating) {
-    generateAllBtn.disabled = isGenerating;
-    updateGridBtn.disabled = isGenerating;
-    resetAllBtn.disabled = isGenerating;
-    updatePreviewBtn.disabled = isGenerating;
-    
-    // Disable/enable all "Generate This Cell" buttons
-    const cellButtons = promptGridElement.querySelectorAll('.cell-button');
-    cellButtons.forEach(button => {
-      button.disabled = isGenerating;
-    });
-  }
-
-  // Background removal functions
-  function handleColorChange(e) {
-    const colorHex = e.target.value;
-    colorHexInput.value = colorHex;
-    colorPreview.style.backgroundColor = colorHex;
-    
-    // Update state with selected color
-    const rgb = backgroundRemover.hexToRgb(colorHex);
-    currentState.selectedColor = {
-      r: rgb.r,
-      g: rgb.g,
-      b: rgb.b,
-      hex: colorHex,
-      rgba: `rgba(${rgb.r},${rgb.g},${rgb.b},1)`
-    };
-  }
-  
-  function handleHexInput(e) {
-    const value = e.target.value;
-    
-    // Make sure the value starts with #
-    if (!value.startsWith('#')) {
-      e.target.value = '#' + value;
-    }
-    
-    // Validate hex format with regex
-    const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-    if (hexRegex.test(value)) {
-      colorToRemoveInput.value = value;
-      colorPreview.style.backgroundColor = value;
-      
-      // Update state with selected color
-      const rgb = backgroundRemover.hexToRgb(value);
-      currentState.selectedColor = {
-        r: rgb.r,
-        g: rgb.g,
-        b: rgb.b,
-        hex: value,
-        rgba: `rgba(${rgb.r},${rgb.g},${rgb.b},1)`
-      };
-    }
-  }
-  
-  function useCommonColor() {
-    const canvas = spritesheetPreview.querySelector('canvas');
-    if (!canvas) {
-      showError("Please generate a spritesheet preview first.");
-      return;
-    }
-    
-    // Find the most common color in the canvas
-    const mostCommonColor = backgroundRemover.findMostCommonColor(canvas);
-    currentState.mostCommonColor = mostCommonColor;
-    
-    // Update the UI
-    colorToRemoveInput.value = mostCommonColor.hex;
-    colorHexInput.value = mostCommonColor.hex;
-    colorPreview.style.backgroundColor = mostCommonColor.hex;
-    
-    // Update the button text
-    useCommonColorBtn.textContent = `Use Most Common Color (${mostCommonColor.hex})`;
-    
-    // Update state with selected color
-    currentState.selectedColor = mostCommonColor;
-  }
-  
-  function removeBackground(useTolerance) {
-    const canvas = spritesheetPreview.querySelector('canvas');
-    if (!canvas) {
-      showError("Please generate a spritesheet preview first.");
-      return;
-    }
-    
-    // Clone the canvas to avoid modifying the original
-    const clonedCanvas = document.createElement('canvas');
-    clonedCanvas.width = canvas.width;
-    clonedCanvas.height = canvas.height;
-    const ctx = clonedCanvas.getContext('2d');
-    ctx.drawImage(canvas, 0, 0);
-    
-    if (useTolerance) {
-      // Show loading modal
-      showModal(progressModal);
-      progressMessage.textContent = "Removing background with tolerance...";
-      progressBar.style.width = "50%";
-      
-      // Use setTimeout to allow the UI to update before the heavy processing
-      setTimeout(() => {
-        const tolerance = parseInt(toleranceValueInput.value) || 30;
-        backgroundRemover.removeColorWithTolerance(clonedCanvas, currentState.selectedColor, tolerance);
-        
-        // Replace the original canvas
-        canvas.parentNode.replaceChild(clonedCanvas, canvas);
-        
-        // Setup eyedropper for the new canvas
-        backgroundRemover.setupEyedropper(clonedCanvas, colorToRemoveInput, eyedropperToggle);
-        
-        setupCanvasZoomToggle(clonedCanvas);
-        
-        // Set background removed flag
-        currentState.backgroundRemoved = true;
-        
-        hideModal(progressModal);
-      }, 100);
-    } else {
-      // Exact color removal is fast enough to not need a loading indicator
-      backgroundRemover.removeExactColor(clonedCanvas, currentState.selectedColor);
-      
-      // Replace the original canvas
-      canvas.parentNode.replaceChild(clonedCanvas, canvas);
-      
-      // Setup eyedropper for the new canvas
-      backgroundRemover.setupEyedropper(clonedCanvas, colorToRemoveInput, eyedropperToggle);
-      
-      setupCanvasZoomToggle(clonedCanvas);
-      
-      // Set background removed flag
-      currentState.backgroundRemoved = true;
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    colorHexInput.value = currentState.selectedColor.hex;
-    colorPreview.style.backgroundColor = currentState.selectedColor.hex;
-    
-    // Initialize event listeners for color inputs
-    colorToRemoveInput.addEventListener('change', handleColorChange);
-    colorHexInput.addEventListener('input', handleHexInput);
-  });
-
-  // Save/Load style and content functions
+  // Function to save and load styles should now save and restore row/column overrides
   function saveStyle() {
     try {
       const styleName = styleNameInput.value.trim();
@@ -1081,11 +748,19 @@ document.addEventListener('DOMContentLoaded', () => {
       // Add new style
       savedStyles[styleName] = {
         prefix: prefixPromptInput.value,
-        suffix: suffixPromptInput.value
+        suffix: suffixPromptInput.value,
+        name: styleName
       };
       
       // Save back to localStorage
       localStorage.setItem('savedStyles', JSON.stringify(savedStyles));
+      
+      // Add to styleOverrides for potential row/column use
+      currentState.styleOverrides[styleName] = {
+        prefix: prefixPromptInput.value,
+        suffix: suffixPromptInput.value,
+        name: styleName
+      };
       
       // Update style dropdown
       updateStyleDropdown();
@@ -1099,6 +774,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // Reset all function should now clear row/column overrides as well
+  function resetAll() {
+    // Reset all cell data
+    currentState.cells.forEach(cell => {
+      cell.prompt = '';
+      cell.imageUrl = null;
+      cell.localUrl = null;
+      cell.isGenerating = false;
+      cell.error = null;
+    });
+    
+    // Reset global prompts
+    prefixPromptInput.value = '';
+    suffixPromptInput.value = '';
+    
+    // Reset row and column style overrides
+    currentState.rowStyleOverrides = {};
+    currentState.columnStyleOverrides = {};
+    
+    // Update UI
+    createPromptGrid();
+    createImageGrid();
+    updateSpritesheetPreview();
+    updateRowColumnStyleOverrides();
+    
+    // Disable download button
+    downloadBtn.disabled = true;
+  }
+
+  // ... existing code ...
+
   function loadStyle() {
     try {
       const styleName = savedStylesSelect.value;
@@ -1124,660 +830,8 @@ document.addEventListener('DOMContentLoaded', () => {
       showError('Failed to load style preset. ' + error.message);
     }
   }
-  
-  function saveContent() {
-    try {
-      const contentName = contentNameInput.value.trim();
-      if (!contentName) {
-        showError("Please enter a name for this content preset.");
-        return;
-      }
-      
-      // Create a content preset from the current cell prompts
-      const contentPreset = currentState.cells.map(cell => cell.prompt);
-      
-      // Get all saved content presets
-      const savedContents = JSON.parse(localStorage.getItem('savedContents') || '{}');
-      
-      // Add new content preset
-      savedContents[contentName] = contentPreset;
-      
-      // Save back to localStorage
-      localStorage.setItem('savedContents', JSON.stringify(savedContents));
-      
-      // Update content dropdown
-      updateContentDropdown();
-      updateSavedContentsSelect();
-      
-      showAlert(`Content preset "${contentName}" saved successfully!`, 'success');
-      contentNameInput.value = '';
-    } catch (error) {
-      console.error('Error saving content preset:', error);
-      showError('Failed to save content preset. ' + error.message);
-    }
-  }
-  
-  function loadContent() {
-    try {
-      const contentName = savedContentsSelect.value;
-      if (!contentName) {
-        showError('Please select a content preset to load.');
-        return;
-      }
-      
-      const savedContents = JSON.parse(localStorage.getItem('savedContents') || '{}');
-      
-      if (!savedContents[contentName]) {
-        showError(`Content preset "${contentName}" not found.`);
-        return;
-      }
-      
-      // Load the content preset
-      const contentPreset = savedContents[contentName];
-      
-      // Populate the grid with the content
-      populateGridFromSaved(contentPreset);
-      
-      showAlert(`Content preset "${contentName}" loaded successfully!`, 'success');
-    } catch (error) {
-      console.error('Error loading content preset:', error);
-      showError('Failed to load content preset. ' + error.message);
-    }
-  }
-  
-  function populateGridFromSaved(contentPreset) {
-    // Reset all cells first
-    currentState.cells.forEach((cell, index) => {
-      // Only set if we have content for this cell
-      if (index < contentPreset.length) {
-        cell.prompt = contentPreset[index];
-      } else {
-        cell.prompt = '';
-      }
-    });
-    
-    // Update the prompt grid to show the new content
-    createPromptGrid();
-    
-    // Show feedback
-    showAlert('Grid populated with content', 'success');
-  }
-  
-  function updateStyleDropdown() {
-    const styleOptions = document.getElementById('styleOptions');
-    if (!styleOptions) return;
-    
-    // Get all built-in options
-    const builtInOptions = Array.from(styleOptions.querySelectorAll('option'))
-      .filter(option => option.value !== '' && !option.value.startsWith('custom_'))
-      .map(option => option.outerHTML);
-    
-    // Get user saved styles
-    const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-    
-    // Create HTML for custom options
-    const customOptions = Object.keys(savedStyles).map(styleName => 
-      `<option value="custom_${styleName}">Custom: ${styleName}</option>`
-    );
-    
-    // Update the dropdown
-    styleOptions.innerHTML = '<option value="">-- Select art style --</option>' + 
-                            builtInOptions.join('') + 
-                            (customOptions.length ? '<optgroup label="Custom Styles">' + customOptions.join('') + '</optgroup>' : '');
-  }
-  
-  function updateContentDropdown() {
-    const contentSuggestions = document.getElementById('contentSuggestions');
-    if (!contentSuggestions) return;
-    
-    // Get all built-in options
-    const builtInOptions = Array.from(contentSuggestions.querySelectorAll('option'))
-      .filter(option => option.value !== '' && !option.value.startsWith('custom_'))
-      .map(option => option.outerHTML);
-    
-    // Get user saved content presets
-    const savedContents = JSON.parse(localStorage.getItem('savedContents') || '{}');
-    
-    // Create HTML for custom options
-    const customOptions = Object.keys(savedContents).map(contentName => 
-      `<option value="custom_${contentName}">Custom: ${contentName}</option>`
-    );
-    
-    // Update the dropdown
-    contentSuggestions.innerHTML = '<option value="">-- Select content type --</option>' + 
-                                 builtInOptions.join('') + 
-                                 (customOptions.length ? '<optgroup label="Custom Content">' + customOptions.join('') + '</optgroup>' : '');
-  }
 
-  function initializeDropdowns() {
-    updateStyleDropdown();
-    updateContentDropdown();
-    updateSavedStylesSelect();
-    updateSavedContentsSelect();
-  }
+  // ... existing code ...
 
-  function updateSavedStylesSelect() {
-    savedStylesSelect.innerHTML = '<option value="">-- Select a saved style --</option>';
-    
-    // Get user saved styles
-    const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-    
-    // Add each style as an option
-    Object.keys(savedStyles).forEach(styleName => {
-      const option = document.createElement('option');
-      option.value = styleName;
-      option.textContent = styleName;
-      savedStylesSelect.appendChild(option);
-    });
-  }
-
-  function updateSavedContentsSelect() {
-    savedContentsSelect.innerHTML = '<option value="">-- Select a saved content preset --</option>';
-    
-    // Get user saved content presets
-    const savedContents = JSON.parse(localStorage.getItem('savedContents') || '{}');
-    
-    // Add each content preset as an option
-    Object.keys(savedContents).forEach(contentName => {
-      const option = document.createElement('option');
-      option.value = contentName;
-      option.textContent = contentName;
-      savedContentsSelect.appendChild(option);
-    });
-  }
-
-  function initializeStyleOverrides() {
-    createRowStyleOverridesList();
-    createColStyleOverridesList();
-  }
-
-  function createRowStyleOverridesList() {
-    if (!rowStyleOverridesList) return;
-    
-    rowStyleOverridesList.innerHTML = '';
-    
-    for (let row = 0; row < currentState.rows; row++) {
-      const overrideItem = document.createElement('div');
-      overrideItem.className = 'style-override-item';
-      
-      const label = document.createElement('div');
-      label.className = 'style-override-label';
-      label.textContent = `Row ${row + 1}:`;
-      
-      const select = document.createElement('select');
-      select.className = 'style-override-select';
-      select.dataset.row = row;
-      
-      // Add empty option
-      const emptyOption = document.createElement('option');
-      emptyOption.value = '';
-      emptyOption.textContent = '-- No style override --';
-      select.appendChild(emptyOption);
-      
-      // Get all saved styles
-      const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-      
-      // Add each style as an option
-      Object.keys(savedStyles).forEach(styleName => {
-        const option = document.createElement('option');
-        option.value = styleName;
-        option.textContent = styleName;
-        select.appendChild(option);
-      });
-      
-      // Set selected value if this row has a style override
-      if (currentState.rowStyles[row]) {
-        select.value = currentState.rowStyles[row].name;
-      }
-      
-      // Add change event
-      select.addEventListener('change', (e) => {
-        const rowIndex = parseInt(e.target.dataset.row);
-        const styleName = e.target.value;
-        
-        if (styleName) {
-          // Apply style override
-          const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-          if (savedStyles[styleName]) {
-            currentState.rowStyles[rowIndex] = {
-              name: styleName,
-              prefix: savedStyles[styleName].prefix || '',
-              suffix: savedStyles[styleName].suffix || ''
-            };
-            
-            // Update style info
-            if (e.target.nextElementSibling && e.target.nextElementSibling.classList.contains('style-info')) {
-              e.target.nextElementSibling.innerHTML = `<span class="style-info-icon" title="Prefix: ${savedStyles[styleName].prefix}\nSuffix: ${savedStyles[styleName].suffix}">ℹ️</span> Applied "${styleName}" style to Row ${rowIndex + 1}`;
-            } else {
-              const styleInfo = document.createElement('div');
-              styleInfo.className = 'style-info';
-              styleInfo.innerHTML = `<span class="style-info-icon" title="Prefix: ${savedStyles[styleName].prefix}\nSuffix: ${savedStyles[styleName].suffix}">ℹ️</span> Applied "${styleName}" style to Row ${rowIndex + 1}`;
-              overrideItem.appendChild(styleInfo);
-            }
-          }
-        } else {
-          // Remove style override
-          delete currentState.rowStyles[rowIndex];
-          
-          // Remove style info
-          if (e.target.nextElementSibling && e.target.nextElementSibling.classList.contains('style-info')) {
-            e.target.nextElementSibling.remove();
-          }
-        }
-        
-        // Update grid to reflect changes
-        createPromptGrid();
-      });
-      
-      // Add clear button
-      const clearBtn = document.createElement('button');
-      clearBtn.className = 'style-clear-btn';
-      clearBtn.textContent = '✕';
-      clearBtn.title = 'Clear style override';
-      clearBtn.addEventListener('click', () => {
-        delete currentState.rowStyles[row];
-        select.value = '';
-        
-        // Remove style info
-        if (select.nextElementSibling && select.nextElementSibling.classList.contains('style-info')) {
-          select.nextElementSibling.remove();
-        }
-        
-        // Update grid
-        createPromptGrid();
-      });
-      
-      overrideItem.appendChild(label);
-      overrideItem.appendChild(select);
-      overrideItem.appendChild(clearBtn);
-      
-      // Add style info if this row has a style override
-      if (currentState.rowStyles[row]) {
-        const style = currentState.rowStyles[row];
-        const styleInfo = document.createElement('div');
-        styleInfo.className = 'style-info';
-        styleInfo.innerHTML = `<span class="style-info-icon" title="Prefix: ${style.prefix}\nSuffix: ${style.suffix}">ℹ️</span> Applied "${style.name}" style to Row ${row + 1}`;
-        overrideItem.appendChild(styleInfo);
-      }
-      
-      rowStyleOverridesList.appendChild(overrideItem);
-    }
-  }
-
-  function createColStyleOverridesList() {
-    if (!colStyleOverridesList) return;
-    
-    colStyleOverridesList.innerHTML = '';
-    
-    for (let col = 0; col < currentState.columns; col++) {
-      const overrideItem = document.createElement('div');
-      overrideItem.className = 'style-override-item';
-      
-      const label = document.createElement('div');
-      label.className = 'style-override-label';
-      label.textContent = `Column ${col + 1}:`;
-      
-      const select = document.createElement('select');
-      select.className = 'style-override-select';
-      select.dataset.col = col;
-      
-      // Add empty option
-      const emptyOption = document.createElement('option');
-      emptyOption.value = '';
-      emptyOption.textContent = '-- No style override --';
-      select.appendChild(emptyOption);
-      
-      // Get all saved styles
-      const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-      
-      // Add each style as an option
-      Object.keys(savedStyles).forEach(styleName => {
-        const option = document.createElement('option');
-        option.value = styleName;
-        option.textContent = styleName;
-        select.appendChild(option);
-      });
-      
-      // Set selected value if this column has a style override
-      if (currentState.colStyles[col]) {
-        select.value = currentState.colStyles[col].name;
-      }
-      
-      // Add change event
-      select.addEventListener('change', (e) => {
-        const colIndex = parseInt(e.target.dataset.col);
-        const styleName = e.target.value;
-        
-        if (styleName) {
-          // Apply style override
-          const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-          if (savedStyles[styleName]) {
-            currentState.colStyles[colIndex] = {
-              name: styleName,
-              prefix: savedStyles[styleName].prefix || '',
-              suffix: savedStyles[styleName].suffix || ''
-            };
-            
-            // Update style info
-            if (e.target.nextElementSibling && e.target.nextElementSibling.classList.contains('style-info')) {
-              e.target.nextElementSibling.innerHTML = `<span class="style-info-icon" title="Prefix: ${savedStyles[styleName].prefix}\nSuffix: ${savedStyles[styleName].suffix}">ℹ️</span> Applied "${styleName}" style to Column ${colIndex + 1}`;
-            } else {
-              const styleInfo = document.createElement('div');
-              styleInfo.className = 'style-info';
-              styleInfo.innerHTML = `<span class="style-info-icon" title="Prefix: ${savedStyles[styleName].prefix}\nSuffix: ${savedStyles[styleName].suffix}">ℹ️</span> Applied "${styleName}" style to Column ${colIndex + 1}`;
-              overrideItem.appendChild(styleInfo);
-            }
-          }
-        } else {
-          // Remove style override
-          delete currentState.colStyles[colIndex];
-          
-          // Remove style info
-          if (e.target.nextElementSibling && e.target.nextElementSibling.classList.contains('style-info')) {
-            e.target.nextElementSibling.remove();
-          }
-        }
-        
-        // Update grid to reflect changes
-        createPromptGrid();
-      });
-      
-      // Add clear button
-      const clearBtn = document.createElement('button');
-      clearBtn.className = 'style-clear-btn';
-      clearBtn.textContent = '✕';
-      clearBtn.title = 'Clear style override';
-      clearBtn.addEventListener('click', () => {
-        delete currentState.colStyles[col];
-        select.value = '';
-        
-        // Remove style info
-        if (select.nextElementSibling && select.nextElementSibling.classList.contains('style-info')) {
-          select.nextElementSibling.remove();
-        }
-        
-        // Update grid
-        createPromptGrid();
-      });
-      
-      overrideItem.appendChild(label);
-      overrideItem.appendChild(select);
-      overrideItem.appendChild(clearBtn);
-      
-      // Add style info if this column has a style override
-      if (currentState.colStyles[col]) {
-        const style = currentState.colStyles[col];
-        const styleInfo = document.createElement('div');
-        styleInfo.className = 'style-info';
-        styleInfo.innerHTML = `<span class="style-info-icon" title="Prefix: ${style.prefix}\nSuffix: ${style.suffix}">ℹ️</span> Applied "${style.name}" style to Column ${col + 1}`;
-        overrideItem.appendChild(styleInfo);
-      }
-      
-      colStyleOverridesList.appendChild(overrideItem);
-    }
-  }
-
-  // Sprite coordinate export functions
-  function generateCoordsSnippet() {
-    const canvas = spritesheetPreview.querySelector('canvas');
-    if (!canvas) {
-      showError("Please generate a spritesheet preview first.");
-      return;
-    }
-    
-    const rows = currentState.rows;
-    const columns = currentState.columns;
-    const cellWidth = currentState.cellWidth;
-    const cellHeight = currentState.cellHeight;
-  
-    // Apply scaling if checkbox is checked
-    const applyScale = applyScaleToExportCheckbox.checked;
-    const scale = applyScale ? parseFloat(downloadScaleInput.value) || 1.0 : 1.0;
-  
-    let snippet = '// Spritesheet coordinates\n';
-    snippet += `// ${applyScale ? 'Scaled to ' + scale.toFixed(2) + 'x' : 'Original size'}\n`;
-    snippet += 'const sprites = {\n';
-  
-    currentState.cells.forEach((cell, index) => {
-      const x = cell.col * cellWidth * scale;
-      const y = cell.row * cellHeight * scale;
-      const width = cellWidth * scale;
-      const height = cellHeight * scale;
-      // Sanitize prompt for variable name: remove non-alphanumeric chars, trim to 20 chars
-      const name = cell.prompt.trim()
-                   .replace(/[^a-zA-Z0-9_]/g, '_')
-                   .toLowerCase()
-                   .substring(0, 20) || `sprite_${index}`;
-      // Sanitize comment text to prevent breaking out of comment
-      const commentText = cell.prompt.replace(/[\*\/\\]/g, '_');
-  
-      snippet += `  ${name}: { x: ${Math.round(x)}, y: ${Math.round(y)}, width: ${Math.round(width)}, height: ${Math.round(height)} }, // "${commentText}"\n`;
-    });
-  
-    snippet += '};\n';
-  
-    coordsOutput.value = snippet;
-  }
-
-  function generateBoundingBoxesSnippet() {
-    const canvas = spritesheetPreview.querySelector('canvas');
-    if (!canvas) {
-      showError("Please generate a spritesheet preview first.");
-      return;
-    }
-  
-    if (!currentState.backgroundRemoved) {
-      showError("Please remove the background first to calculate accurate bounding boxes.");
-      return;
-    }
-  
-    // Show loading modal for potentially heavy operation
-    showModal(progressModal);
-    progressMessage.textContent = "Calculating bounding boxes...";
-    progressBar.style.width = "30%";
-  
-    setTimeout(() => {
-      try {
-        const ctx = canvas.getContext('2d');
-        const rows = currentState.rows;
-        const columns = currentState.columns;
-        const cellWidth = currentState.cellWidth;
-        const cellHeight = currentState.cellHeight;
-      
-        // Apply scaling if checkbox is checked
-        const applyScale = applyScaleToExportCheckbox.checked;
-        const scale = applyScale ? parseFloat(downloadScaleInput.value) || 1.0 : 1.0;
-      
-        let snippet = '// Spritesheet bounding boxes\n';
-        snippet += `// ${applyScale ? 'Scaled to ' + scale.toFixed(2) + 'x' : 'Original size'}\n`;
-        snippet += 'const sprites = {\n';
-      
-        // For each cell, calculate the smallest rectangle containing all non-transparent pixels
-        currentState.cells.forEach((cell, index) => {
-          progressBar.style.width = `${30 + (index / currentState.cells.length) * 70}%`;
-        
-          const cellX = cell.col * cellWidth;
-          const cellY = cell.row * cellHeight;
-          // Sanitize prompt for variable name: remove non-alphanumeric chars, trim to 20 chars
-          const name = cell.prompt.trim()
-                       .replace(/[^a-zA-Z0-9_]/g, '_')
-                       .toLowerCase()
-                       .substring(0, 20) || `sprite_${index}`;
-          // Sanitize comment text to prevent breaking out of comment
-          const commentText = cell.prompt.replace(/[\*\/\\]/g, '_');
-  
-          // Get the image data for this cell
-          const imageData = ctx.getImageData(cellX, cellY, cellWidth, cellHeight);
-          const data = imageData.data;
-  
-          // Find the bounding box
-          let minX = cellWidth;
-          let minY = cellHeight;
-          let maxX = 0;
-          let maxY = 0;
-          let hasOpaque = false;
-  
-          for (let y = 0; y < cellHeight; y++) {
-            for (let x = 0; x < cellWidth; x++) {
-              const pixelIndex = (y * cellWidth + x) * 4;
-              const alpha = data[pixelIndex + 3];
-  
-              if (alpha > 0) { // Non-transparent pixel
-                hasOpaque = true;
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x);
-                maxY = Math.max(maxY, y);
-              }
-            }
-          }
-  
-          if (hasOpaque) {
-            const width = maxX - minX + 1;
-            const height = maxY - minY + 1;
-  
-            // Apply scaling to final coordinates
-            const scaledX = Math.round((cellX + minX) * scale);
-            const scaledY = Math.round((cellY + minY) * scale);
-            const scaledWidth = Math.round(width * scale);
-            const scaledHeight = Math.round(height * scale);
-  
-            snippet += `  ${name}: { x: ${scaledX}, y: ${scaledY}, width: ${scaledWidth}, height: ${scaledHeight} }, // "${commentText}"\n`;
-          } else {
-            // If no opaque pixels found, use the full cell
-            const scaledX = Math.round(cellX * scale);
-            const scaledY = Math.round(cellY * scale);
-            const scaledWidth = Math.round(cellWidth * scale);
-            const scaledHeight = Math.round(cellHeight * scale);
-  
-            snippet += `  ${name}: { x: ${scaledX}, y: ${scaledY}, width: ${scaledWidth}, height: ${scaledHeight} }, // "${commentText}" (no visible content)\n`;
-          }
-        });
-      
-        snippet += '};\n';
-      
-        coordsOutput.value = snippet;
-        hideModal(progressModal);
-      } catch (error) {
-        console.error('Error generating bounding boxes:', error);
-        hideModal(progressModal);
-        showError('Failed to generate bounding boxes: ' + error.message);
-      }
-    }, 100);
-  }
-  
-  function copyOutputToClipboard() {
-    if (!coordsOutput.value) {
-      showError("Please generate coordinates or bounding boxes first.");
-      return;
-    }
-  
-    coordsOutput.select();
-    document.execCommand('copy');
-  
-    alert('Code copied to clipboard!');
-  }
-
-  function updateDownloadResolutionInfo() {
-    const scale = parseFloat(downloadScaleInput.value) || 1.0;
-    const width = currentState.columns * currentState.cellWidth * scale;
-    const height = currentState.rows * currentState.cellHeight * scale;
-    downloadResolutionInfo.textContent = `Final resolution: ${Math.round(width)} × ${Math.round(height)} pixels`;
-  }
-
-  // Add the content suggestion system
-  const contentSuggestions = document.getElementById('contentSuggestions');
-  const styleOptions = document.getElementById('styleOptions');
-
-  if (contentSuggestions) {
-    contentSuggestions.addEventListener('change', function() {
-      if (this.value === '') return;
-      
-      if (this.value.startsWith('custom_')) {
-        // Load custom content
-        const contentName = this.value.replace('custom_', '');
-        const savedContents = JSON.parse(localStorage.getItem('savedContents') || '{}');
-        
-        if (savedContents[contentName]) {
-          populateGridFromSaved(savedContents[contentName]);
-        }
-      } else {
-        // Load built-in content
-        const selectedContent = contentPresets[this.value];
-        if (selectedContent) {
-          populateGrid(selectedContent);
-        }
-      }
-      
-      // Reset the select after applying
-      this.value = '';
-    });
-  }
-
-  if (styleOptions) {
-    styleOptions.addEventListener('change', function() {
-      if (this.value === '') return;
-      
-      if (this.value.startsWith('custom_')) {
-        // Load custom style
-        const styleName = this.value.replace('custom_', '');
-        const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-        
-        if (savedStyles[styleName]) {
-          prefixPromptInput.value = savedStyles[styleName].prefix || '';
-          suffixPromptInput.value = savedStyles[styleName].suffix || '';
-        }
-      } else {
-        // Load built-in style
-        const selectedStyle = stylePresets[this.value];
-        if (selectedStyle) {
-          if (selectedStyle.prefix) {
-            prefixPromptInput.value = selectedStyle.prefix;
-          }
-          if (selectedStyle.suffix) {
-            suffixPromptInput.value = selectedStyle.suffix;
-          }
-        }
-      }
-      
-      // Reset the select after applying
-      this.value = '';
-    });
-  }
-
-  function populateGrid(contentArray) {
-    // Reset all cells first
-    currentState.cells.forEach((cell, index) => {
-      // Calculate position in the contentArray
-      const contentIndex = index % contentArray.length;
-      // Set the prompt to the corresponding content from the array
-      cell.prompt = contentArray[contentIndex] || '';
-    });
-    
-    // Update the prompt grid to show the new content
-    createPromptGrid();
-    
-    // Show feedback
-    showAlert('Grid populated with content', 'success');
-  }
-  
-  function showAlert(message, type = 'info') {
-    const alertElement = document.createElement('div');
-    alertElement.className = `alert-message ${type}`;
-    alertElement.textContent = message;
-    document.body.appendChild(alertElement);
-  
-    // Show the alert
-    setTimeout(() => {
-      alertElement.classList.add('show');
-    }, 10);
-  
-    // Remove after a delay
-    setTimeout(() => {
-      alertElement.classList.remove('show');
-      setTimeout(() => {
-        document.body.removeChild(alertElement);
-      }, 300);
-    }, 3000);
-  }
+  // ... existing code ...
 });
