@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const styleDetailPrefix = document.getElementById('styleDetailPrefix');
   const styleDetailSuffix = document.getElementById('styleDetailSuffix');
   const styleDetailCloseBtn = document.getElementById('styleDetailClose');
+  const themeToggleBtn = document.getElementById('themeToggle');
 
   // State
   window.currentState = {
@@ -71,126 +72,119 @@ document.addEventListener('DOMContentLoaded', () => {
     styleOverrides: {} // For tracking all named style overrides
   };
 
-  // Initialize the UI
-  import('./modules/tabs.js').then(module => {
-    window.initializeTabs = module.initializeTabs;
-    initializeTabs();
-  });
+  // Initialize all modules first
+  const modulesToLoad = [
+    './modules/tabs.js',
+    './modules/grid.js',
+    './modules/imageGeneration.js',
+    './modules/spritesheet.js',
+    './modules/styleOverrides.js',
+    './modules/background.js',
+    './modules/export.js',
+    './modules/presets.js',
+    './modules/ui.js'
+  ];
 
-  import('./modules/grid.js').then(module => {
-    window.createGrids = module.createGrids;
-    window.handleUpdateGrid = module.handleUpdateGrid;
-    window.validateGridInputs = module.validateGridInputs;
-    window.initializeCells = module.initializeCells;
-    window.createPromptGrid = module.createPromptGrid;
-    window.createImageGrid = module.createImageGrid;
-    window.highlightCells = module.highlightCells;
-    window.unhighlightCells = module.unhighlightCells;
-
-    // Initialize with imported functions
-    createGrids();
-  });
-
-  import('./modules/imageGeneration.js').then(module => {
-    window.handleGenerateCell = module.handleGenerateCell;
-    window.generateCell = module.generateCell;
-    window.generateImage = module.generateImage;
-    window.handleGenerateAll = module.handleGenerateAll;
-    window.generateAllCells = module.generateAllCells;
-    window.handleResetAll = module.handleResetAll;
-    window.resetAll = module.resetAll;
-    window.getFullPromptForCell = module.getFullPromptForCell;
-  });
-
-  import('./modules/spritesheet.js').then(module => {
-    window.updateSpritesheetPreview = module.updateSpritesheetPreview;
-    window.handleDownload = module.handleDownload;
-    window.downloadSpritesheet = module.downloadSpritesheet;
-    window.updateDownloadResolutionInfo = module.updateDownloadResolutionInfo;
-
-    // Initialize with imported functions
-    updateDownloadResolutionInfo();
-  });
-
-  import('./modules/styleOverrides.js').then(module => {
-    window.updateRowColumnStyleOverrides = module.updateRowColumnStyleOverrides;
-    window.createRowStyleOverridesUI = module.createRowStyleOverridesUI;
-    window.createColumnStyleOverridesUI = module.createColumnStyleOverridesUI;
-    window.showStyleDetails = module.showStyleDetails;
-
-    // Initialize with imported functions
-    updateRowColumnStyleOverrides();
-  });
-
-  import('./modules/background.js').then(module => {
-    window.handleColorChange = module.handleColorChange;
-    window.handleHexInput = module.handleHexInput;
-    window.useCommonColor = module.useCommonColor;
-    window.removeBackground = module.removeBackground;
-  });
-
-  import('./modules/export.js').then(module => {
-    window.generateCoordsSnippet = module.generateCoordsSnippet;
-    window.generateBoundingBoxesSnippet = module.generateBoundingBoxesSnippet;
-    window.copyOutputToClipboard = module.copyOutputToClipboard;
-  });
-
-  import('./modules/presets.js').then(module => {
-    window.initializeDropdowns = module.initializeDropdowns;
-    window.updateSavedStylesSelect = module.updateSavedStylesSelect;
-    window.updateSavedContentsSelect = module.updateSavedContentsSelect;
-    window.populateGridWithPreset = module.populateGridWithPreset;
-    window.applyStylePreset = module.applyStylePreset;
-    window.saveStyle = module.saveStyle;
-    window.loadStyle = module.loadStyle;
-    window.saveContent = module.saveContent;
-    window.loadContent = module.loadContent;
-
-    // Initialize with imported functions
-    initializeDropdowns();
-  });
-
-  import('./modules/ui.js').then(module => {
-    window.showConfirmation = module.showConfirmation;
-    window.handleConfirmation = module.handleConfirmation;
-    window.hideModal = module.hideModal;
-    window.showModal = module.showModal;
-    window.showError = module.showError;
-    window.showAlert = module.showAlert;
-    window.toggleTheme = module.toggleTheme;
-    window.initTheme = module.initTheme;
-
-    // Initialize with imported functions
-    initTheme();
-  });
-
-  // Event Listeners
-  updateGridBtn.addEventListener('click', () => window.handleUpdateGrid());
-  generateAllBtn.addEventListener('click', () => window.handleGenerateAll());
-  resetAllBtn.addEventListener('click', () => window.handleResetAll());
-  downloadBtn.addEventListener('click', () => window.handleDownload());
-  confirmYesBtn.addEventListener('click', () => window.handleConfirmation());
-  confirmNoBtn.addEventListener('click', () => window.hideModal(confirmationModal));
-  updatePreviewBtn.addEventListener('click', () => window.updateSpritesheetPreview());
-  colorToRemoveInput.addEventListener('change', (e) => window.handleColorChange(e));
-  colorHexInput.addEventListener('input', (e) => window.handleHexInput(e));
-  useCommonColorBtn.addEventListener('click', () => window.useCommonColor());
-  removeWithToleranceBtn.addEventListener('click', () => window.removeBackground(true));
-  saveStyleBtn.addEventListener('click', () => window.saveStyle());
-  loadStyleBtn.addEventListener('click', () => window.loadStyle());
-  saveContentBtn.addEventListener('click', () => window.saveContent());
-  loadContentBtn.addEventListener('click', () => window.loadContent());
-  generateCoordsBtn.addEventListener('click', () => window.generateCoordsSnippet());
-  generateBoundingBoxesBtn.addEventListener('click', () => window.generateBoundingBoxesSnippet());
-  copyToClipboardBtn.addEventListener('click', () => window.copyOutputToClipboard());
-  downloadScaleInput.addEventListener('input', () => window.updateDownloadResolutionInfo());
-
-  // Theme toggle
-  const themeToggleBtn = document.getElementById('themeToggle');
-  themeToggleBtn.addEventListener('click', () => window.toggleTheme());
-
-  // Add event listener for style detail modal close button
-  if (styleDetailCloseBtn) {
-    styleDetailCloseBtn.addEventListener('click', () => window.hideModal(styleDetailModal));
-  }
+  // Wait for all modules to load before initializing the UI
+  Promise.all(modulesToLoad.map(module => import(module)))
+    .then(modules => {
+      // Tabs module
+      window.initializeTabs = modules[0].initializeTabs;
+      
+      // Grid module
+      window.createGrids = modules[1].createGrids;
+      window.handleUpdateGrid = modules[1].handleUpdateGrid;
+      window.validateGridInputs = modules[1].validateGridInputs;
+      window.initializeCells = modules[1].initializeCells;
+      window.createPromptGrid = modules[1].createPromptGrid;
+      window.createImageGrid = modules[1].createImageGrid;
+      window.highlightCells = modules[1].highlightCells;
+      window.unhighlightCells = modules[1].unhighlightCells;
+      
+      // Image generation module
+      window.handleGenerateCell = modules[2].handleGenerateCell;
+      window.generateCell = modules[2].generateCell;
+      window.generateImage = modules[2].generateImage;
+      window.handleGenerateAll = modules[2].handleGenerateAll;
+      window.generateAllCells = modules[2].generateAllCells;
+      window.handleResetAll = modules[2].handleResetAll;
+      window.resetAll = modules[2].resetAll;
+      window.getFullPromptForCell = modules[2].getFullPromptForCell;
+      
+      // Spritesheet module
+      window.updateSpritesheetPreview = modules[3].updateSpritesheetPreview;
+      window.handleDownload = modules[3].handleDownload;
+      window.downloadSpritesheet = modules[3].downloadSpritesheet;
+      window.updateDownloadResolutionInfo = modules[3].updateDownloadResolutionInfo;
+      
+      // Style overrides module
+      window.updateRowColumnStyleOverrides = modules[4].updateRowColumnStyleOverrides;
+      window.createRowStyleOverridesUI = modules[4].createRowStyleOverridesUI;
+      window.createColumnStyleOverridesUI = modules[4].createColumnStyleOverridesUI;
+      window.showStyleDetails = modules[4].showStyleDetails;
+      
+      // Background module
+      window.handleColorChange = modules[5].handleColorChange;
+      window.handleHexInput = modules[5].handleHexInput;
+      window.useCommonColor = modules[5].useCommonColor;
+      window.removeBackground = modules[5].removeBackground;
+      
+      // Export module
+      window.generateCoordsSnippet = modules[6].generateCoordsSnippet;
+      window.generateBoundingBoxesSnippet = modules[6].generateBoundingBoxesSnippet;
+      window.copyOutputToClipboard = modules[6].copyOutputToClipboard;
+      
+      // Presets module
+      window.initializeDropdowns = modules[7].initializeDropdowns;
+      window.updateSavedStylesSelect = modules[7].updateSavedStylesSelect;
+      window.updateSavedContentsSelect = modules[7].updateSavedContentsSelect;
+      window.populateGridWithPreset = modules[7].populateGridWithPreset;
+      window.applyStylePreset = modules[7].applyStylePreset;
+      window.saveStyle = modules[7].saveStyle;
+      window.loadStyle = modules[7].loadStyle;
+      window.saveContent = modules[7].saveContent;
+      window.loadContent = modules[7].loadContent;
+      
+      // UI module
+      window.showConfirmation = modules[8].showConfirmation;
+      window.handleConfirmation = modules[8].handleConfirmation;
+      window.hideModal = modules[8].hideModal;
+      window.showModal = modules[8].showModal;
+      window.showError = modules[8].showError;
+      window.showAlert = modules[8].showAlert;
+      window.toggleTheme = modules[8].toggleTheme;
+      window.initTheme = modules[8].initTheme;
+      
+      // Initialize the UI now that all modules are loaded
+      window.initializeTabs();
+      window.createGrids();
+      window.updateDownloadResolutionInfo();
+      window.initTheme();
+      window.initializeDropdowns();
+      
+      // Set up event listeners
+      updateGridBtn.addEventListener('click', () => window.handleUpdateGrid());
+      generateAllBtn.addEventListener('click', () => window.handleGenerateAll());
+      resetAllBtn.addEventListener('click', () => window.handleResetAll());
+      downloadBtn.addEventListener('click', () => window.handleDownload());
+      confirmYesBtn.addEventListener('click', () => window.handleConfirmation());
+      confirmNoBtn.addEventListener('click', () => window.hideModal(confirmationModal));
+      updatePreviewBtn.addEventListener('click', () => window.updateSpritesheetPreview());
+      colorToRemoveInput.addEventListener('change', (e) => window.handleColorChange(e));
+      colorHexInput.addEventListener('input', (e) => window.handleHexInput(e));
+      useCommonColorBtn.addEventListener('click', () => window.useCommonColor());
+      removeWithToleranceBtn.addEventListener('click', () => window.removeBackground(true));
+      saveStyleBtn.addEventListener('click', () => window.saveStyle());
+      loadStyleBtn.addEventListener('click', () => window.loadStyle());
+      saveContentBtn.addEventListener('click', () => window.saveContent());
+      loadContentBtn.addEventListener('click', () => window.loadContent());
+      generateCoordsBtn.addEventListener('click', () => window.generateCoordsSnippet());
+      generateBoundingBoxesBtn.addEventListener('click', () => window.generateBoundingBoxesSnippet());
+      copyToClipboardBtn.addEventListener('click', () => window.copyOutputToClipboard());
+      downloadScaleInput.addEventListener('input', () => window.updateDownloadResolutionInfo());
+      themeToggleBtn.addEventListener('click', () => window.toggleTheme());
+      if (styleDetailCloseBtn) {
+        styleDetailCloseBtn.addEventListener('click', () => window.hideModal(styleDetailModal));
+      }
+    });
 });
