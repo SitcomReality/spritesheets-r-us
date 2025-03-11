@@ -1191,6 +1191,34 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadSpritesheet(scale);
   }
   
+  function handleColorChange(e) {
+    const color = e.target.value;
+    currentState.selectedColor = backgroundRemover.hexToRgb(color);
+    currentState.selectedColor.hex = color;
+    currentState.selectedColor.rgba = `rgba(${currentState.selectedColor.r},${currentState.selectedColor.g},${currentState.selectedColor.b},1)`;
+    
+    // Update the color preview and hex input
+    colorPreview.style.backgroundColor = color;
+    colorHexInput.value = color;
+  }
+  
+  function handleHexInput(e) {
+    let hexValue = e.target.value;
+    if (!hexValue.startsWith('#')) {
+      hexValue = '#' + hexValue;
+    }
+    
+    // Validate hex code format with regex
+    if (/^#[0-9A-F]{6}$/i.test(hexValue)) {
+      colorToRemoveInput.value = hexValue;
+      colorPreview.style.backgroundColor = hexValue;
+      
+      currentState.selectedColor = backgroundRemover.hexToRgb(hexValue);
+      currentState.selectedColor.hex = hexValue;
+      currentState.selectedColor.rgba = `rgba(${currentState.selectedColor.r},${currentState.selectedColor.g},${currentState.selectedColor.b},1)`;
+    }
+  }
+  
   function showConfirmation(title, message, callback) {
     confirmationTitle.textContent = title;
     confirmationMessage.textContent = message;
