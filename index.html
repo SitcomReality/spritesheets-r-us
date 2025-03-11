@@ -38,10 +38,22 @@
     <section id="prompts">
       <h2>Prompt Configuration</h2>
       <div class="save-load-container">
-        <button id="saveStyle" class="secondary-button">Save Style (Prefix/Suffix)</button>
-        <button id="loadStyle" class="secondary-button">Load Style</button>
-        <button id="saveContent" class="secondary-button">Save Cell Contents</button>
-        <button id="loadContent" class="secondary-button">Load Cell Contents</button>
+        <div class="save-input-group">
+          <input type="text" id="styleName" class="save-name-input" placeholder="Style name">
+          <button id="saveStyle" class="secondary-button">Save Style</button>
+          <select id="savedStyles" class="save-name-input">
+            <option value="">-- Select a saved style --</option>
+          </select>
+          <button id="loadStyle" class="secondary-button">Load Style</button>
+        </div>
+        <div class="save-input-group">
+          <input type="text" id="contentName" class="save-name-input" placeholder="Content set name">
+          <button id="saveContent" class="secondary-button">Save Content</button>
+          <select id="savedContents" class="save-name-input">
+            <option value="">-- Select saved content --</option>
+          </select>
+          <button id="loadContent" class="secondary-button">Load Content</button>
+        </div>
       </div>
       <div class="global-prompts">
         <div class="input-group full-width">

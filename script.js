@@ -40,6 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateBoundingBoxesBtn = document.getElementById('generateBoundingBoxes');
   const coordsOutput = document.getElementById('coordsOutput');
   const copyToClipboardBtn = document.getElementById('copyToClipboard');
+  const styleNameInput = document.getElementById('styleName');
+  const contentNameInput = document.getElementById('contentName');
+  const savedStylesSelect = document.getElementById('savedStyles');
+  const savedContentsSelect = document.getElementById('savedContents');
 
   // State
   let currentState = {
@@ -892,8 +896,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Save/Load style and content functions
   function saveStyle() {
     try {
-      const styleName = prompt("Enter a name for this style preset:");
-      if (!styleName) return;
+      const styleName = styleNameInput.value.trim();
+      if (!styleName) {
+        showError("Please enter a name for this style preset.");
+        return;
+      }
 
       // Get all saved styles
       const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
@@ -909,8 +916,10 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Update style dropdown
       updateStyleDropdown();
+      updateSavedStylesSelect();
       
-      alert(`Style preset "${styleName}" saved successfully!`);
+      showAlert(`Style preset "${styleName}" saved successfully!`, 'success');
+      styleNameInput.value = '';
     } catch (error) {
       console.error('Error saving style:', error);
       showError('Failed to save style preset. ' + error.message);
@@ -919,17 +928,16 @@ document.addEventListener('DOMContentLoaded', () => {
   
   function loadStyle() {
     try {
-      const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
-      
-      if (Object.keys(savedStyles).length === 0) {
-        showError('No saved style presets found.');
+      const styleName = savedStylesSelect.value;
+      if (!styleName) {
+        showError('Please select a style to load.');
         return;
       }
       
-      const styleName = prompt("Enter the name of the style to load, or choose one of the following: " + 
-                              Object.keys(savedStyles).join(", "));
+      const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
       
-      if (!styleName || !savedStyles[styleName]) {
+      if (!savedStyles[styleName]) {
+        showError(`Style "${styleName}" not found.`);
         return;
       }
       
@@ -937,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
       prefixPromptInput.value = savedStyles[styleName].prefix || '';
       suffixPromptInput.value = savedStyles[styleName].suffix || '';
       
-      alert(`Style preset "${styleName}" loaded successfully!`);
+      showAlert(`Style preset "${styleName}" loaded successfully!`, 'success');
     } catch (error) {
       console.error('Error loading style:', error);
       showError('Failed to load style preset. ' + error.message);
@@ -946,8 +954,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   function saveContent() {
     try {
-      const contentName = prompt("Enter a name for this content preset:");
-      if (!contentName) return;
+      const contentName = contentNameInput.value.trim();
+      if (!contentName) {
+        showError("Please enter a name for this content preset.");
+        return;
+      }
       
       // Create a content preset from the current cell prompts
       const contentPreset = currentState.cells.map(cell => cell.prompt);
@@ -963,8 +974,10 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Update content dropdown
       updateContentDropdown();
+      updateSavedContentsSelect();
       
-      alert(`Content preset "${contentName}" saved successfully!`);
+      showAlert(`Content preset "${contentName}" saved successfully!`, 'success');
+      contentNameInput.value = '';
     } catch (error) {
       console.error('Error saving content preset:', error);
       showError('Failed to save content preset. ' + error.message);
@@ -973,17 +986,16 @@ document.addEventListener('DOMContentLoaded', () => {
   
   function loadContent() {
     try {
-      const savedContents = JSON.parse(localStorage.getItem('savedContents') || '{}');
-      
-      if (Object.keys(savedContents).length === 0) {
-        showError('No saved content presets found.');
+      const contentName = savedContentsSelect.value;
+      if (!contentName) {
+        showError('Please select a content preset to load.');
         return;
       }
       
-      const contentName = prompt("Enter the name of the content preset to load, or choose one of the following: " + 
-                                Object.keys(savedContents).join(", "));
+      const savedContents = JSON.parse(localStorage.getItem('savedContents') || '{}');
       
-      if (!contentName || !savedContents[contentName]) {
+      if (!savedContents[contentName]) {
+        showError(`Content preset "${contentName}" not found.`);
         return;
       }
       
@@ -993,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Populate the grid with the content
       populateGridFromSaved(contentPreset);
       
-      alert(`Content preset "${contentName}" loaded successfully!`);
+      showAlert(`Content preset "${contentName}" loaded successfully!`, 'success');
     } catch (error) {
       console.error('Error loading content preset:', error);
       showError('Failed to load content preset. ' + error.message);
@@ -1064,72 +1076,60 @@ document.addEventListener('DOMContentLoaded', () => {
   function initializeDropdowns() {
     updateStyleDropdown();
     updateContentDropdown();
+    updateSavedStylesSelect();
+    updateSavedContentsSelect();
   }
 
-  // Save/Load state functions
-  function saveState() {
-    try {
-      // Create a saveable state object
-      const stateToSave = {
-        rows: currentState.rows,
-        columns: currentState.columns,
-        prefixPrompt: prefixPromptInput.value,
-        suffixPrompt: suffixPromptInput.value,
-        cells: currentState.cells.map(cell => ({
-          row: cell.row,
-          col: cell.col,
-          prompt: cell.prompt
-        }))
-      };
-      
-      // Save to localStorage
-      localStorage.setItem('spritesheetState', JSON.stringify(stateToSave));
-      
-      alert('Spritesheet configuration saved successfully!');
-    } catch (error) {
-      console.error('Error saving state:', error);
-      showError('Failed to save configuration. ' + error.message);
-    }
+  function updateSavedStylesSelect() {
+    savedStylesSelect.innerHTML = '<option value="">-- Select a saved style --</option>';
+    
+    // Get user saved styles
+    const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+    
+    // Add each style as an option
+    Object.keys(savedStyles).forEach(styleName => {
+      const option = document.createElement('option');
+      option.value = styleName;
+      option.textContent = styleName;
+      savedStylesSelect.appendChild(option);
+    });
   }
-  
-  function loadState() {
-    try {
-      // Get saved state from localStorage
-      const savedStateJSON = localStorage.getItem('spritesheetState');
-      if (!savedStateJSON) {
-        showError('No saved configuration found.');
-        return;
-      }
-      
-      const savedState = JSON.parse(savedStateJSON);
-      
-      // Update input fields
-      rowsInput.value = savedState.rows;
-      columnsInput.value = savedState.columns;
-      prefixPromptInput.value = savedState.prefixPrompt || '';
-      suffixPromptInput.value = savedState.suffixPrompt || '';
-      
-      // Update the grid
-      handleUpdateGrid();
-      
-      // Populate cell prompts
-      savedState.cells.forEach(savedCell => {
-        const cellIndex = savedCell.row * currentState.columns + savedCell.col;
-        if (cellIndex < currentState.cells.length) {
-          currentState.cells[cellIndex].prompt = savedCell.prompt;
-        }
-      });
-      
-      // Update the prompt grid
-      createPromptGrid();
-      
-      alert('Spritesheet configuration loaded successfully!');
-    } catch (error) {
-      console.error('Error loading state:', error);
-      showError('Failed to load configuration. ' + error.message);
-    }
+
+  function updateSavedContentsSelect() {
+    savedContentsSelect.innerHTML = '<option value="">-- Select a saved content preset --</option>';
+    
+    // Get user saved content presets
+    const savedContents = JSON.parse(localStorage.getItem('savedContents') || '{}');
+    
+    // Add each content preset as an option
+    Object.keys(savedContents).forEach(contentName => {
+      const option = document.createElement('option');
+      option.value = contentName;
+      option.textContent = contentName;
+      savedContentsSelect.appendChild(option);
+    });
   }
+
+  function showAlert(message, type = 'info') {
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert-message ${type}`;
+    alertElement.textContent = message;
+    document.body.appendChild(alertElement);
   
+    // Show the alert
+    setTimeout(() => {
+      alertElement.classList.add('show');
+    }, 10);
+  
+    // Remove after a delay
+    setTimeout(() => {
+      alertElement.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(alertElement);
+      }, 300);
+    }, 3000);
+  }
+
   // Sprite coordinate export functions
   function generateCoordsSnippet() {
     const canvas = spritesheetPreview.querySelector('canvas');

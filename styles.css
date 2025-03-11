@@ -574,12 +574,30 @@ body.dark-mode .code-output {
   flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1rem;
-  justify-content: center;
+  justify-content: space-between;
+}
+
+.save-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.save-name-input {
+  width: 150px;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
   .save-load-container {
     flex-direction: column;
+  }
+  
+  .save-input-group {
+    width: 100%;
   }
 }
 
