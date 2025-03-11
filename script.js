@@ -1159,4 +1159,63 @@ document.addEventListener('DOMContentLoaded', () => {
       suffixPromptInput.value = stylePresets[styleName].suffix || '';
     }
   }
+
+  // Add the missing event handler functions
+  function handleUpdateGrid() {
+    createGrids();
+  }
+  
+  function handleGenerateAll() {
+    showConfirmation(
+      "Generate All Images",
+      `Are you sure you want to generate images for all ${currentState.rows * currentState.columns} cells?`,
+      generateAllCells
+    );
+  }
+  
+  function handleResetAll() {
+    showConfirmation(
+      "Reset All Cells",
+      "Are you sure you want to reset all prompts and images?",
+      resetAll
+    );
+  }
+  
+  function handleDownload() {
+    if (!currentState.spritesheetCanvas) {
+      showError("No spritesheet available to download.");
+      return;
+    }
+    
+    const scale = parseFloat(downloadScaleInput.value) || 1.0;
+    downloadSpritesheet(scale);
+  }
+  
+  function showConfirmation(title, message, callback) {
+    confirmationTitle.textContent = title;
+    confirmationMessage.textContent = message;
+    confirmationModal.style.display = 'flex';
+    
+    // Store the callback for when user confirms
+    confirmationModal.dataset.callback = callback.name;
+  }
+  
+  function handleConfirmation() {
+    hideModal(confirmationModal);
+    
+    const callbackName = confirmationModal.dataset.callback;
+    if (callbackName === 'generateAllCells') {
+      generateAllCells();
+    } else if (callbackName === 'resetAll') {
+      resetAll();
+    }
+  }
+  
+  function hideModal(modal) {
+    modal.style.display = 'none';
+  }
+  
+  function showModal(modal) {
+    modal.style.display = 'flex';
+  }
 });
