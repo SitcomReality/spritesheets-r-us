@@ -64,6 +64,12 @@ function createRowStyleOverridesUI() {
     const prefixInput = document.createElement('textarea');
     prefixInput.placeholder = 'Enter prefix prompt for this row...';
     prefixInput.value = rowOverride?.prefix || '';
+    prefixInput.addEventListener('input', () => {
+      if (overrideCheckbox.checked && window.currentState.rowStyleOverrides[row]) {
+        window.currentState.rowStyleOverrides[row].prefix = prefixInput.value;
+        console.log(`Updated row ${row+1} prefix to: "${prefixInput.value}"`);
+      }
+    });
     
     prefixGroup.appendChild(prefixLabel);
     prefixGroup.appendChild(prefixInput);
@@ -78,6 +84,12 @@ function createRowStyleOverridesUI() {
     const suffixInput = document.createElement('textarea');
     suffixInput.placeholder = 'Enter suffix prompt for this row...';
     suffixInput.value = rowOverride?.suffix || '';
+    suffixInput.addEventListener('input', () => {
+      if (overrideCheckbox.checked && window.currentState.rowStyleOverrides[row]) {
+        window.currentState.rowStyleOverrides[row].suffix = suffixInput.value;
+        console.log(`Updated row ${row+1} suffix to: "${suffixInput.value}"`);
+      }
+    });
     
     suffixGroup.appendChild(suffixLabel);
     suffixGroup.appendChild(suffixInput);
@@ -93,6 +105,12 @@ function createRowStyleOverridesUI() {
     nameInput.type = 'text';
     nameInput.placeholder = 'Name this style (optional)';
     nameInput.value = rowOverride?.name || '';
+    nameInput.addEventListener('input', () => {
+      if (overrideCheckbox.checked && window.currentState.rowStyleOverrides[row]) {
+        window.currentState.rowStyleOverrides[row].name = nameInput.value || `Row ${row + 1} Style`;
+        console.log(`Updated row ${row+1} name to: "${nameInput.value}"`);
+      }
+    });
     
     nameGroup.appendChild(nameLabel);
     nameGroup.appendChild(nameInput);
@@ -234,6 +252,12 @@ function createColumnStyleOverridesUI() {
     const prefixInput = document.createElement('textarea');
     prefixInput.placeholder = 'Enter prefix prompt for this column...';
     prefixInput.value = colOverride?.prefix || '';
+    prefixInput.addEventListener('input', () => {
+      if (overrideCheckbox.checked && window.currentState.columnStyleOverrides[col]) {
+        window.currentState.columnStyleOverrides[col].prefix = prefixInput.value;
+        console.log(`Updated column ${col+1} prefix to: "${prefixInput.value}"`);
+      }
+    });
     
     prefixGroup.appendChild(prefixLabel);
     prefixGroup.appendChild(prefixInput);
@@ -248,6 +272,12 @@ function createColumnStyleOverridesUI() {
     const suffixInput = document.createElement('textarea');
     suffixInput.placeholder = 'Enter suffix prompt for this column...';
     suffixInput.value = colOverride?.suffix || '';
+    suffixInput.addEventListener('input', () => {
+      if (overrideCheckbox.checked && window.currentState.columnStyleOverrides[col]) {
+        window.currentState.columnStyleOverrides[col].suffix = suffixInput.value;
+        console.log(`Updated column ${col+1} suffix to: "${suffixInput.value}"`);
+      }
+    });
     
     suffixGroup.appendChild(suffixLabel);
     suffixGroup.appendChild(suffixInput);
@@ -263,6 +293,12 @@ function createColumnStyleOverridesUI() {
     nameInput.type = 'text';
     nameInput.placeholder = 'Name this style (optional)';
     nameInput.value = colOverride?.name || '';
+    nameInput.addEventListener('input', () => {
+      if (overrideCheckbox.checked && window.currentState.columnStyleOverrides[col]) {
+        window.currentState.columnStyleOverrides[col].name = nameInput.value || `Column ${col + 1} Style`;
+        console.log(`Updated column ${col+1} name to: "${nameInput.value}"`);
+      }
+    });
     
     nameGroup.appendChild(nameLabel);
     nameGroup.appendChild(nameInput);
