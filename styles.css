@@ -577,6 +577,12 @@ body.dark-mode .code-output {
   justify-content: center;
 }
 
+@media (max-width: 768px) {
+  .save-load-container {
+    flex-direction: column;
+  }
+}
+
 .export-controls {
   display: flex;
   gap: 1rem;
