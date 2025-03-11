@@ -9,26 +9,34 @@ function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
   const rowOverride = window.currentState.rowStyleOverrides[rowIndex];
   const colOverride = window.currentState.columnStyleOverrides[colIndex];
   
+  console.log(`Cell (${rowIndex+1},${colIndex+1}) - Checking for overrides:`);
+  console.log(`Row override exists: ${!!rowOverride}`, rowOverride);
+  console.log(`Column override exists: ${!!colOverride}`, colOverride);
+  
   let prefixToUse = globalPrefix;
   let suffixToUse = globalSuffix;
   
   // Apply row override prefix if it exists
   if (rowOverride && rowOverride.prefix) {
+    console.log(`Applying row ${rowIndex+1} prefix override: "${rowOverride.prefix}"`);
     prefixToUse = rowOverride.prefix.trim();
   }
   
   // Apply column override prefix if it exists (column overrides take precedence over row)
   if (colOverride && colOverride.prefix) {
+    console.log(`Applying column ${colIndex+1} prefix override: "${colOverride.prefix}"`);
     prefixToUse = colOverride.prefix.trim();
   }
   
   // Apply row override suffix if it exists
   if (rowOverride && rowOverride.suffix) {
+    console.log(`Applying row ${rowIndex+1} suffix override: "${rowOverride.suffix}"`);
     suffixToUse = rowOverride.suffix.trim();
   }
   
   // Apply column override suffix if it exists (column overrides take precedence over row)
   if (colOverride && colOverride.suffix) {
+    console.log(`Applying column ${colIndex+1} suffix override: "${colOverride.suffix}"`);
     suffixToUse = colOverride.suffix.trim();
   }
   
@@ -37,6 +45,8 @@ function getFullPromptForCell(rowIndex, colIndex, cellPrompt) {
   if (prefixToUse) finalPrompt += `${prefixToUse} `;
   finalPrompt += cellPrompt.trim();
   if (suffixToUse) finalPrompt += ` ${suffixToUse}`;
+  
+  console.log(`Final prompt for cell (${rowIndex+1},${colIndex+1}): "${finalPrompt}"`);
   
   return finalPrompt.trim();
 }

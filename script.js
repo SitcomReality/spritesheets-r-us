@@ -72,6 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
     styleOverrides: {} // For tracking all named style overrides
   };
 
+  console.log("Initial state:", {
+    rowStyleOverrides: {...window.currentState.rowStyleOverrides},
+    columnStyleOverrides: {...window.currentState.columnStyleOverrides}
+  });
+
   // Initialize all modules first
   const modulesToLoad = [
     './modules/tabs.js',

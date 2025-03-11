@@ -8,6 +8,8 @@ function createRowStyleOverridesUI() {
   const rowStyleOverridesContainer = document.getElementById('rowStyleOverrides');
   rowStyleOverridesContainer.innerHTML = '';
   
+  console.log("Creating row style overrides UI with current overrides:", window.currentState.rowStyleOverrides);
+  
   for (let row = 0; row < window.currentState.rows; row++) {
     const rowOverride = window.currentState.rowStyleOverrides[row] || null;
     
@@ -108,6 +110,8 @@ function createRowStyleOverridesUI() {
           name: nameInput.value || `Row ${row + 1} Style`
         };
         
+        console.log(`Row ${row+1} style override applied:`, window.currentState.rowStyleOverrides[row]);
+        
         // If style has a name, save it to styleOverrides for reuse
         if (nameInput.value) {
           window.currentState.styleOverrides[nameInput.value] = {
@@ -121,6 +125,7 @@ function createRowStyleOverridesUI() {
       } else {
         // Remove the style override
         delete window.currentState.rowStyleOverrides[row];
+        console.log(`Row ${row+1} style override removed`);
         overrideRow.classList.remove('active');
       }
       
@@ -158,6 +163,8 @@ function createRowStyleOverridesUI() {
 function createColumnStyleOverridesUI() {
   const columnStyleOverridesContainer = document.getElementById('columnStyleOverrides');
   columnStyleOverridesContainer.innerHTML = '';
+  
+  console.log("Creating column style overrides UI with current overrides:", window.currentState.columnStyleOverrides);
   
   for (let col = 0; col < window.currentState.columns; col++) {
     const colOverride = window.currentState.columnStyleOverrides[col] || null;
@@ -259,6 +266,8 @@ function createColumnStyleOverridesUI() {
           name: nameInput.value || `Column ${col + 1} Style`
         };
         
+        console.log(`Column ${col+1} style override applied:`, window.currentState.columnStyleOverrides[col]);
+        
         // If style has a name, save it to styleOverrides for reuse
         if (nameInput.value) {
           window.currentState.styleOverrides[nameInput.value] = {
@@ -272,6 +281,7 @@ function createColumnStyleOverridesUI() {
       } else {
         // Remove the style override
         delete window.currentState.columnStyleOverrides[col];
+        console.log(`Column ${col+1} style override removed`);
         overrideRow.classList.remove('active');
       }
       
