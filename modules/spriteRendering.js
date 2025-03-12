@@ -150,6 +150,34 @@ function initializeSpriteRendering() {
       section.appendChild(spriteElement);
     }
   });
+  
+  // Add sprite numbers to tutorial steps
+  const tutorialStepNumbers = document.querySelectorAll('.tutorial-step .step-number');
+  tutorialStepNumbers.forEach(numberElement => {
+    const number = numberElement.textContent;
+    numberElement.innerHTML = '';
+    
+    const spriteName = `number__${number}_`;
+    if (spritesheetData.sprites[spriteName]) {
+      const sprite = spritesheetData.sprites[spriteName];
+      
+      // Use a smaller scale for tutorial step numbers
+      const scale = 0.2;
+      const width = sprite.width * scale;
+      const height = sprite.height * scale;
+      
+      // Create sprite element
+      const spriteElement = document.createElement('div');
+      spriteElement.className = 'sprite';
+      spriteElement.style.width = `${width}px`;
+      spriteElement.style.height = `${height}px`;
+      spriteElement.style.backgroundImage = `url('spritesheets_r_us_spritesheet.png')`;
+      spriteElement.style.backgroundSize = `${spritesheetData.width * scale}px ${spritesheetData.height * scale}px`;
+      spriteElement.style.backgroundPosition = `-${sprite.x * scale}px -${sprite.y * scale}px`;
+      
+      numberElement.appendChild(spriteElement);
+    }
+  });
 }
 
 // Export functions

@@ -88,26 +88,27 @@ section {
 }
 
 .section-number {
-  background-color: #222;
+  background-color: #111 !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  width: 50px;
-  height: 50px;
+  border-radius: 100%;
+  width: 2.5em !important;
+  height: 2.5em !important;
   font-size: 1.5rem;
   font-weight: bold;
   margin-right: 1rem;
   flex-shrink: 0;
   position: absolute;
-  left: 1.5rem;
-  top: 1.5rem;
+  left: 0.5rem;
+  top: 0.5rem;
 }
 
 .section-header h2 {
   margin: 0;
   border-bottom: none;
   padding-bottom: 0;
+  z-index: 5;
 }
 
 h2 {
@@ -401,7 +402,7 @@ body.dark-mode .spinner {
   flex-wrap: wrap;
   gap: 5px;
   margin: 0 auto;
-  background-color: #222;
+  background-color: #111;
   padding: 15px;
   border-radius: 10px;
 }
@@ -854,13 +855,13 @@ body.dark-mode .cell-prompt-preview {
 }
 
 .tutorial-step .step-number {
-  background-color: #222;
+  background-color: #111;
   padding: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: auto;
-  height: auto;
+  width: 40px;
+  height: 40px;
 }
 
 .step-content {
@@ -1075,4 +1076,8 @@ body.dark-mode .code-output {
 
 .alert-message.error {
   background-color: var(--error-color);
+}
+
+#siteTitle .sprite:nth-child(12) {
+  margin: 0 1.5em;
 }
