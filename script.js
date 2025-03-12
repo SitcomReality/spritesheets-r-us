@@ -160,6 +160,18 @@ document.addEventListener('DOMContentLoaded', () => {
       window.toggleTheme = modules[8].toggleTheme;
       window.initTheme = modules[8].initTheme;
       
+      // Import sprite rendering module
+      import('./modules/spriteRendering.js')
+        .then(spriteRendering => {
+          window.renderSprite = spriteRendering.renderSprite;
+          window.renderSpriteText = spriteRendering.renderSpriteText;
+          window.initializeSpriteRendering = spriteRendering.initializeSpriteRendering;
+          
+          // Initialize sprite rendering after UI is loaded
+          window.initializeSpriteRendering();
+        })
+        .catch(error => console.error('Error loading sprite rendering module:', error));
+      
       // Initialize the UI now that all modules are loaded
       window.initializeTabs();
       window.createGrids();
