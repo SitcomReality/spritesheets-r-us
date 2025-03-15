@@ -5,6 +5,7 @@ function initializeDropdowns() {
   
   // Populate content suggestions dropdown
   if (contentSuggestions) {
+    contentSuggestions.innerHTML = '<option value="">-- Select content type --</option>';
     for (const category in contentPresets) {
       const option = document.createElement('option');
       option.value = category;
@@ -22,6 +23,7 @@ function initializeDropdowns() {
   
   // Populate style options dropdown
   if (styleOptions) {
+    styleOptions.innerHTML = '<option value="">-- Select art style --</option>';
     for (const style in stylePresets) {
       const option = document.createElement('option');
       option.value = style;
