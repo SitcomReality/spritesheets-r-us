@@ -106,6 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
       window.highlightCells = modules[1].highlightCells;
       window.unhighlightCells = modules[1].unhighlightCells;
       
+      // Make stylePresets globally available
+      window.stylePresets = stylePresets;
+
       // Image generation module
       window.handleGenerateCell = modules[2].handleGenerateCell;
       window.generateCell = modules[2].generateCell;

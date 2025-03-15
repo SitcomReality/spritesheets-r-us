@@ -662,7 +662,7 @@ body.dark-mode .override-row.active {
 }
 
 .override-inputs.show {
-  max-height: 300px;
+  max-height: 500px;
   margin-top: 1rem;
 }
 

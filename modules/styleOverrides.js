@@ -198,11 +198,87 @@ function createRowStyleOverridesUI() {
       window.showModal(loadStyleModal);
     });
     
+    // Add apply preset style button
+    const applyPresetStyleButton = document.createElement('button');
+    applyPresetStyleButton.className = 'secondary-button';
+    applyPresetStyleButton.textContent = 'Apply Art Style';
+    applyPresetStyleButton.addEventListener('click', () => {
+      const presetStyleModal = document.createElement('div');
+      presetStyleModal.className = 'modal';
+      presetStyleModal.id = 'tempPresetStyleModal';
+      
+      const modalContent = document.createElement('div');
+      modalContent.className = 'modal-content';
+      
+      const modalTitle = document.createElement('h2');
+      modalTitle.textContent = 'Select Art Style';
+      
+      const styleSelect = document.createElement('select');
+      styleSelect.className = 'save-name-input';
+      styleSelect.style.marginBottom = '1rem';
+      
+      // Add default option
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- Select an art style --';
+      styleSelect.appendChild(defaultOption);
+      
+      // Add style presets
+      for (const style in window.stylePresets) {
+        const option = document.createElement('option');
+        option.value = style;
+        option.textContent = style.charAt(0).toUpperCase() + style.slice(1);
+        styleSelect.appendChild(option);
+      }
+      
+      const modalButtons = document.createElement('div');
+      modalButtons.className = 'modal-buttons';
+      
+      const applyButton = document.createElement('button');
+      applyButton.className = 'primary-button';
+      applyButton.textContent = 'Apply';
+      applyButton.addEventListener('click', () => {
+        const selectedStyle = styleSelect.value;
+        if (selectedStyle && window.stylePresets[selectedStyle]) {
+          prefixInput.value = window.stylePresets[selectedStyle].prefix || '';
+          suffixInput.value = window.stylePresets[selectedStyle].suffix || '';
+          nameInput.value = selectedStyle;
+          
+          // If checkbox is checked, also update the override immediately
+          if (overrideCheckbox.checked && window.currentState.rowStyleOverrides[row]) {
+            window.currentState.rowStyleOverrides[row].prefix = window.stylePresets[selectedStyle].prefix || '';
+            window.currentState.rowStyleOverrides[row].suffix = window.stylePresets[selectedStyle].suffix || '';
+            window.currentState.rowStyleOverrides[row].name = selectedStyle;
+          }
+        }
+        document.body.removeChild(presetStyleModal);
+      });
+      
+      const cancelButton = document.createElement('button');
+      cancelButton.className = 'secondary-button';
+      cancelButton.textContent = 'Cancel';
+      cancelButton.addEventListener('click', () => {
+        document.body.removeChild(presetStyleModal);
+      });
+      
+      modalButtons.appendChild(applyButton);
+      modalButtons.appendChild(cancelButton);
+      
+      modalContent.appendChild(modalTitle);
+      modalContent.appendChild(styleSelect);
+      modalContent.appendChild(modalButtons);
+      presetStyleModal.appendChild(modalContent);
+      
+      document.body.appendChild(presetStyleModal);
+      presetStyleModal.style.display = 'flex';
+    });
+    
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'override-buttons';
     buttonContainer.appendChild(saveButton);
     buttonContainer.appendChild(saveToLibraryButton);
     buttonContainer.appendChild(loadFromLibraryButton);
+    buttonContainer.appendChild(applyPresetStyleButton);
     
     overrideInputs.appendChild(prefixGroup);
     overrideInputs.appendChild(suffixGroup);
@@ -439,11 +515,87 @@ function createColumnStyleOverridesUI() {
       window.showModal(loadStyleModal);
     });
     
+    // Add apply preset style button
+    const applyPresetStyleButton = document.createElement('button');
+    applyPresetStyleButton.className = 'secondary-button';
+    applyPresetStyleButton.textContent = 'Apply Art Style';
+    applyPresetStyleButton.addEventListener('click', () => {
+      const presetStyleModal = document.createElement('div');
+      presetStyleModal.className = 'modal';
+      presetStyleModal.id = 'tempPresetStyleModal';
+      
+      const modalContent = document.createElement('div');
+      modalContent.className = 'modal-content';
+      
+      const modalTitle = document.createElement('h2');
+      modalTitle.textContent = 'Select Art Style';
+      
+      const styleSelect = document.createElement('select');
+      styleSelect.className = 'save-name-input';
+      styleSelect.style.marginBottom = '1rem';
+      
+      // Add default option
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- Select an art style --';
+      styleSelect.appendChild(defaultOption);
+      
+      // Add style presets
+      for (const style in window.stylePresets) {
+        const option = document.createElement('option');
+        option.value = style;
+        option.textContent = style.charAt(0).toUpperCase() + style.slice(1);
+        styleSelect.appendChild(option);
+      }
+      
+      const modalButtons = document.createElement('div');
+      modalButtons.className = 'modal-buttons';
+      
+      const applyButton = document.createElement('button');
+      applyButton.className = 'primary-button';
+      applyButton.textContent = 'Apply';
+      applyButton.addEventListener('click', () => {
+        const selectedStyle = styleSelect.value;
+        if (selectedStyle && window.stylePresets[selectedStyle]) {
+          prefixInput.value = window.stylePresets[selectedStyle].prefix || '';
+          suffixInput.value = window.stylePresets[selectedStyle].suffix || '';
+          nameInput.value = selectedStyle;
+          
+          // If checkbox is checked, also update the override immediately
+          if (overrideCheckbox.checked && window.currentState.columnStyleOverrides[col]) {
+            window.currentState.columnStyleOverrides[col].prefix = window.stylePresets[selectedStyle].prefix || '';
+            window.currentState.columnStyleOverrides[col].suffix = window.stylePresets[selectedStyle].suffix || '';
+            window.currentState.columnStyleOverrides[col].name = selectedStyle;
+          }
+        }
+        document.body.removeChild(presetStyleModal);
+      });
+      
+      const cancelButton = document.createElement('button');
+      cancelButton.className = 'secondary-button';
+      cancelButton.textContent = 'Cancel';
+      cancelButton.addEventListener('click', () => {
+        document.body.removeChild(presetStyleModal);
+      });
+      
+      modalButtons.appendChild(applyButton);
+      modalButtons.appendChild(cancelButton);
+      
+      modalContent.appendChild(modalTitle);
+      modalContent.appendChild(styleSelect);
+      modalContent.appendChild(modalButtons);
+      presetStyleModal.appendChild(modalContent);
+      
+      document.body.appendChild(presetStyleModal);
+      presetStyleModal.style.display = 'flex';
+    });
+    
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'override-buttons';
     buttonContainer.appendChild(saveButton);
     buttonContainer.appendChild(saveToLibraryButton);
     buttonContainer.appendChild(loadFromLibraryButton);
+    buttonContainer.appendChild(applyPresetStyleButton);
     
     overrideInputs.appendChild(prefixGroup);
     overrideInputs.appendChild(suffixGroup);
