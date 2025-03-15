@@ -1078,10 +1078,6 @@ body.dark-mode .code-output {
   background-color: var(--error-color);
 }
 
-#siteTitle .sprite:nth-child(12) {
-  margin: 0 1.5em;
-}
-
 #siteTitle .sprite:nth-child(13) {
   margin: 0 1.5em;
 }
