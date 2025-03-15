@@ -203,5 +203,31 @@ document.addEventListener('DOMContentLoaded', () => {
       if (styleDetailCloseBtn) {
         styleDetailCloseBtn.addEventListener('click', () => window.hideModal(styleDetailModal));
       }
+
+      const loadStyleModal = document.getElementById('loadStyleModal');
+      const loadStyleConfirm = document.getElementById('loadStyleConfirm');
+      const loadStyleCancel = document.getElementById('loadStyleCancel');
+
+      if (loadStyleConfirm) {
+        loadStyleConfirm.addEventListener('click', () => {
+          const loadStyleSelect = document.getElementById('loadStyleSelect');
+          const styleName = loadStyleSelect.value;
+          
+          if (!styleName) {
+            window.showError("Please select a style to load");
+            return;
+          }
+          
+          const targetType = loadStyleModal.dataset.targetType;
+          const targetIndex = parseInt(loadStyleModal.dataset.targetIndex);
+          
+          window.applyLoadedStyleToOverride(targetType, targetIndex, styleName);
+          window.hideModal(loadStyleModal);
+        });
+      }
+
+      if (loadStyleCancel) {
+        loadStyleCancel.addEventListener('click', () => window.hideModal(loadStyleModal));
+      }
     });
 });

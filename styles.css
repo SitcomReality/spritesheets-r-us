@@ -1081,3 +1081,17 @@ body.dark-mode .code-output {
 #siteTitle .sprite:nth-child(13) {
   margin: 0 1.5em;
 }
+
+.override-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.override-buttons button {
+  flex: 1;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+}

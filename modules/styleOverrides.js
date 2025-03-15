@@ -151,10 +151,63 @@ function createRowStyleOverridesUI() {
       window.createPromptGrid();
     });
     
+    // Add save to library button
+    const saveToLibraryButton = document.createElement('button');
+    saveToLibraryButton.className = 'secondary-button';
+    saveToLibraryButton.textContent = 'Save to Library';
+    saveToLibraryButton.addEventListener('click', () => {
+      if (nameInput.value) {
+        // Get existing styles from localStorage
+        const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+        
+        // Add/update the style
+        savedStyles[nameInput.value] = {
+          name: nameInput.value,
+          prefix: prefixInput.value,
+          suffix: suffixInput.value
+        };
+        
+        // Save back to localStorage
+        localStorage.setItem('savedStyles', JSON.stringify(savedStyles));
+        
+        // Update the dropdown
+        window.updateSavedStylesSelect();
+        
+        window.showAlert(`Style "${nameInput.value}" saved to library!`, 'success');
+      } else {
+        window.showError("Please enter a name for your style");
+      }
+    });
+    
+    // Add load from library button 
+    const loadFromLibraryButton = document.createElement('button');
+    loadFromLibraryButton.className = 'secondary-button';
+    loadFromLibraryButton.textContent = 'Load from Library';
+    loadFromLibraryButton.addEventListener('click', () => {
+      const loadStyleModal = document.getElementById('loadStyleModal');
+      const loadStyleSelect = document.getElementById('loadStyleSelect');
+      
+      // Update the styles dropdown
+      window.updateLoadStyleSelect(loadStyleSelect);
+      
+      // Store the row reference for later use
+      loadStyleModal.dataset.targetType = 'row';
+      loadStyleModal.dataset.targetIndex = row;
+      
+      // Show the modal
+      window.showModal(loadStyleModal);
+    });
+    
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'override-buttons';
+    buttonContainer.appendChild(saveButton);
+    buttonContainer.appendChild(saveToLibraryButton);
+    buttonContainer.appendChild(loadFromLibraryButton);
+    
     overrideInputs.appendChild(prefixGroup);
     overrideInputs.appendChild(suffixGroup);
     overrideInputs.appendChild(nameGroup);
-    overrideInputs.appendChild(saveButton);
+    overrideInputs.appendChild(buttonContainer);
     
     // Show/hide inputs when checkbox is toggled
     overrideCheckbox.addEventListener('change', () => {
@@ -339,10 +392,63 @@ function createColumnStyleOverridesUI() {
       window.createPromptGrid();
     });
     
+    // Add save to library button
+    const saveToLibraryButton = document.createElement('button');
+    saveToLibraryButton.className = 'secondary-button';
+    saveToLibraryButton.textContent = 'Save to Library';
+    saveToLibraryButton.addEventListener('click', () => {
+      if (nameInput.value) {
+        // Get existing styles from localStorage
+        const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+        
+        // Add/update the style
+        savedStyles[nameInput.value] = {
+          name: nameInput.value,
+          prefix: prefixInput.value,
+          suffix: suffixInput.value
+        };
+        
+        // Save back to localStorage
+        localStorage.setItem('savedStyles', JSON.stringify(savedStyles));
+        
+        // Update the dropdown
+        window.updateSavedStylesSelect();
+        
+        window.showAlert(`Style "${nameInput.value}" saved to library!`, 'success');
+      } else {
+        window.showError("Please enter a name for your style");
+      }
+    });
+    
+    // Add load from library button 
+    const loadFromLibraryButton = document.createElement('button');
+    loadFromLibraryButton.className = 'secondary-button';
+    loadFromLibraryButton.textContent = 'Load from Library';
+    loadFromLibraryButton.addEventListener('click', () => {
+      const loadStyleModal = document.getElementById('loadStyleModal');
+      const loadStyleSelect = document.getElementById('loadStyleSelect');
+      
+      // Update the styles dropdown
+      window.updateLoadStyleSelect(loadStyleSelect);
+      
+      // Store the column reference for later use
+      loadStyleModal.dataset.targetType = 'column';
+      loadStyleModal.dataset.targetIndex = col;
+      
+      // Show the modal
+      window.showModal(loadStyleModal);
+    });
+    
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'override-buttons';
+    buttonContainer.appendChild(saveButton);
+    buttonContainer.appendChild(saveToLibraryButton);
+    buttonContainer.appendChild(loadFromLibraryButton);
+    
     overrideInputs.appendChild(prefixGroup);
     overrideInputs.appendChild(suffixGroup);
     overrideInputs.appendChild(nameGroup);
-    overrideInputs.appendChild(saveButton);
+    overrideInputs.appendChild(buttonContainer);
     
     // Show/hide inputs when checkbox is toggled
     overrideCheckbox.addEventListener('change', () => {
@@ -395,9 +501,72 @@ function showStyleDetails(style) {
   window.showModal(styleDetailModal);
 }
 
+function updateLoadStyleSelect(selectElement) {
+  if (!selectElement) return;
+  
+  // Clear existing options
+  selectElement.innerHTML = '';
+  
+  // Add a default option
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = '-- Select a style --';
+  selectElement.appendChild(defaultOption);
+  
+  // Get saved styles from localStorage
+  const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+  
+  // Add each style as an option
+  for (const styleName in savedStyles) {
+    const option = document.createElement('option');
+    option.value = styleName;
+    option.textContent = styleName;
+    selectElement.appendChild(option);
+  }
+}
+
+function applyLoadedStyleToOverride(type, index, styleName) {
+  // Get saved styles from localStorage
+  const savedStyles = JSON.parse(localStorage.getItem('savedStyles') || '{}');
+  const style = savedStyles[styleName];
+  
+  if (!style) {
+    window.showError(`Style "${styleName}" not found`);
+    return;
+  }
+  
+  // Apply the style to the correct override
+  if (type === 'row') {
+    window.currentState.rowStyleOverrides[index] = {
+      prefix: style.prefix || '',
+      suffix: style.suffix || '',
+      name: style.name || `Row ${index + 1} Style`
+    };
+    
+    // Update the UI
+    createRowStyleOverridesUI();
+  } else if (type === 'column') {
+    window.currentState.columnStyleOverrides[index] = {
+      prefix: style.prefix || '',
+      suffix: style.suffix || '',
+      name: style.name || `Column ${index + 1} Style`
+    };
+    
+    // Update the UI
+    createColumnStyleOverridesUI();
+  }
+  
+  // Update the prompt grid to reflect changes
+  window.createPromptGrid();
+  
+  window.showAlert(`Style "${styleName}" applied successfully!`, 'success');
+}
+
 export { 
   updateRowColumnStyleOverrides, 
   createRowStyleOverridesUI, 
   createColumnStyleOverridesUI, 
-  showStyleDetails 
+  showStyleDetails,
+  updateLoadStyleSelect,
+  applyLoadedStyleToOverride
 };
