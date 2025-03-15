@@ -118,7 +118,7 @@ function renderSpriteText(containerId, text, scale = 0.4) {
 // Initialize all sprite elements
 function initializeSpriteRendering() {
   // Render the title
-  renderSpriteText('siteTitle', 'spriteheetsrus', 0.5);
+  renderSpriteText('siteTitle', 'spritesheetsrus', 0.5);
   
   // Replace section numbers with sprite numbers
   const sectionNumbers = document.querySelectorAll('.section-number');
