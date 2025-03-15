@@ -1,64 +1,64 @@
 // Style presets for the spritesheet generator
 const stylePresets = {
+  stickerStyle: {
+    prefix: "sticker style iconography with thick white outline,",
+    suffix: "sticker on a solid black background, matte black bg"
+  },
+  iconographyBlack: {
+    prefix: "iconography, icon, an iconographic symbol of",
+    suffix: "with a white outline, on a solid black background, black bg, thin white outline"
+  },
   pixelArt: {
-    prefix: "pixel art",
-    suffix: "16-bit style, game sprite"
+    prefix: "pixel art sprite, 16-bit style, game asset",
+    suffix: "on a solid black background, pixel perfect"
   },
-  lineart: {
-    prefix: "minimalist line art, thin black outlines",
-    suffix: "white background, clean design"
+  flatVector: {
+    prefix: "flat vector illustration, minimalist design",
+    suffix: "on solid white background, clean vector style"
   },
-  papercraft: {
-    prefix: "papercraft, paper cutout",
-    suffix: "beveled 2.5D paper art, soft shadows"
+  neonGlow: {
+    prefix: "neon glowing icon of",
+    suffix: "vibrant neon colors against pure black background, dark bg"
   },
-  voxel: {
-    prefix: "voxel 3D model",
-    suffix: "isometric view, minecraft style"
+  chalkboard: {
+    prefix: "chalk drawing of",
+    suffix: "white chalk on black chalkboard, dark background"
   },
-  neonPastel: {
-    prefix: "vivid neon-pastel colors",
-    suffix: "pop art style, bright background"
+  blueprint: {
+    prefix: "blueprint technical drawing of",
+    suffix: "white line drawing on blue background, schematic"
   },
-  watercolor: {
-    prefix: "delicate watercolor painting",
-    suffix: "wet on wet technique, soft colors, painterly"
+  silhouette: {
+    prefix: "solid black silhouette of",
+    suffix: "on pure white background, high contrast"
   },
-  retro3D: {
-    prefix: "retro 3D render",
-    suffix: "PS1 era low-poly style, texture mapped"
+  whiteOutline: {
+    prefix: "simple icon with white outline,",
+    suffix: "clean white outline on black background, minimal"
   },
-  cute: {
-    prefix: "adorable, 3D render, cute whimsical character",
-    suffix: "chibi style, round features, big eyes"
+  paperCut: {
+    prefix: "paper cutout style,",
+    suffix: "white paper on black background, clean edges"
   },
-  oilPainting: {
-    prefix: "oil painting, detailed brushwork",
-    suffix: "impressionist style, textured canvas"
+  holographic: {
+    prefix: "holographic icon of",
+    suffix: "rainbow holographic colors on black background, glossy"
   },
-  comicBook: {
-    prefix: "comic book illustration",
-    suffix: "bold outlines, halftone shading, action lines"
+  retroComputer: {
+    prefix: "retro computer icon, 8-bit style",
+    suffix: "green monochrome on black background, vintage computer"
   },
-  claymation: {
-    prefix: "claymation figure",
-    suffix: "stop motion style, plasticine texture"
+  cartoonOutlined: {
+    prefix: "cartoon outlined icon of",
+    suffix: "thick black outline on white background, simple cartoon"
   },
-  stainedGlass: {
-    prefix: "stained glass art",
-    suffix: "colored glass segments, lead outlines, translucent"
+  vaporwave: {
+    prefix: "vaporwave aesthetic icon of",
+    suffix: "pink and blue gradients on black background, retro grid"
   },
-  ukiyoe: {
-    prefix: "ukiyo-e Japanese woodblock print",
-    suffix: "traditional style, flat colors, strong outlines"
-  },
-  cyberpunk: {
-    prefix: "cyberpunk digital illustration",
-    suffix: "neon lights, futuristic, high tech dystopia"
-  },
-  steampunk: {
-    prefix: "steampunk design",
-    suffix: "brass mechanical parts, victorian aesthetic, gears"
+  woodcut: {
+    prefix: "woodcut style illustration of",
+    suffix: "black ink on white background, engraving style"
   }
 };
 
