@@ -72,7 +72,9 @@ function initializeCells(rows, columns) {
         imageUrl: null,
         localUrl: null,
         isGenerating: false,
-        error: null
+        error: null,
+        sourceType: 'prompt', // Default source type: 'prompt', 'upload', or 'color'
+        backgroundColor: null // For solid color cells
       });
     }
   }
@@ -132,6 +134,43 @@ function createPromptGrid() {
         promptTags.appendChild(colTag);
       }
       
+      // Create source selection tabs
+      const sourceSelector = document.createElement('div');
+      sourceSelector.className = 'cell-source-selector';
+      
+      // Create tab buttons
+      const promptTabButton = document.createElement('button');
+      promptTabButton.className = `source-tab-button ${cell.sourceType === 'prompt' || !cell.sourceType ? 'active' : ''}`;
+      promptTabButton.textContent = 'Prompt';
+      promptTabButton.dataset.sourceType = 'prompt';
+      
+      const uploadTabButton = document.createElement('button');
+      uploadTabButton.className = `source-tab-button ${cell.sourceType === 'upload' ? 'active' : ''}`;
+      uploadTabButton.textContent = 'Upload';
+      uploadTabButton.dataset.sourceType = 'upload';
+      
+      const colorTabButton = document.createElement('button');
+      colorTabButton.className = `source-tab-button ${cell.sourceType === 'color' ? 'active' : ''}`;
+      colorTabButton.textContent = 'Color';
+      colorTabButton.dataset.sourceType = 'color';
+      
+      sourceSelector.appendChild(promptTabButton);
+      sourceSelector.appendChild(uploadTabButton);
+      sourceSelector.appendChild(colorTabButton);
+      
+      // Create source content containers
+      const promptContent = document.createElement('div');
+      promptContent.className = `cell-source-content ${cell.sourceType === 'prompt' || !cell.sourceType ? 'active' : ''}`;
+      promptContent.dataset.sourceType = 'prompt';
+      
+      const uploadContent = document.createElement('div');
+      uploadContent.className = `cell-source-content ${cell.sourceType === 'upload' ? 'active' : ''}`;
+      uploadContent.dataset.sourceType = 'upload';
+      
+      const colorContent = document.createElement('div');
+      colorContent.className = `cell-source-content ${cell.sourceType === 'color' ? 'active' : ''}`;
+      colorContent.dataset.sourceType = 'color';
+      
       // Create a visual representation of the full prompt
       const promptPreview = document.createElement('div');
       promptPreview.className = 'cell-prompt-preview';
@@ -149,7 +188,7 @@ function createPromptGrid() {
       
       const textarea = document.createElement('textarea');
       textarea.placeholder = 'Enter prompt for this cell...';
-      textarea.value = cell.prompt;
+      textarea.value = cell.prompt || '';
       textarea.addEventListener('input', (e) => {
         const index = parseInt(cellElement.dataset.index);
         window.currentState.cells[index].prompt = e.target.value;
@@ -162,14 +201,142 @@ function createPromptGrid() {
       generateBtn.textContent = 'Generate This Cell';
       generateBtn.addEventListener('click', () => window.handleGenerateCell(cellIndex));
       
+      // Add elements to prompt content
+      promptContent.appendChild(textarea);
+      promptContent.appendChild(promptPreview);
+      promptContent.appendChild(promptToggle);
+      promptContent.appendChild(generateBtn);
+      
+      // Add upload content
+      const uploadInstructions = document.createElement('p');
+      uploadInstructions.className = 'upload-instructions';
+      uploadInstructions.textContent = 'Upload an image to use for this cell:';
+      
+      const uploadInput = document.createElement('input');
+      uploadInput.type = 'file';
+      uploadInput.accept = 'image/*';
+      uploadInput.className = 'upload-input';
+      uploadInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          
+          reader.onload = function(loadEvent) {
+            const index = parseInt(cellElement.dataset.index);
+            window.currentState.cells[index].sourceType = 'upload';
+            window.currentState.cells[index].imageUrl = loadEvent.target.result;
+            window.currentState.cells[index].localUrl = loadEvent.target.result;
+            window.createImageGrid();
+            window.updateSpritesheetPreview();
+          };
+          
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      const uploadPreview = document.createElement('div');
+      uploadPreview.className = 'upload-preview';
+      if (cell.sourceType === 'upload' && cell.imageUrl) {
+        const img = document.createElement('img');
+        img.src = cell.imageUrl;
+        img.alt = 'Uploaded image';
+        uploadPreview.appendChild(img);
+      } else {
+        uploadPreview.textContent = 'No image uploaded';
+      }
+      
+      uploadContent.appendChild(uploadInstructions);
+      uploadContent.appendChild(uploadInput);
+      uploadContent.appendChild(uploadPreview);
+      
+      // Add color content
+      const colorInstructions = document.createElement('p');
+      colorInstructions.className = 'color-instructions';
+      colorInstructions.textContent = 'Select a solid color for this cell:';
+      
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.className = 'color-input';
+      colorInput.value = cell.backgroundColor || '#000000';
+      colorInput.addEventListener('input', (e) => {
+        const index = parseInt(cellElement.dataset.index);
+        window.currentState.cells[index].sourceType = 'color';
+        window.currentState.cells[index].backgroundColor = e.target.value;
+        
+        // Generate a solid color image
+        const canvas = document.createElement('canvas');
+        canvas.width = window.currentState.cellWidth;
+        canvas.height = window.currentState.cellHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = e.target.value;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Convert canvas to data URL
+        window.currentState.cells[index].imageUrl = canvas.toDataURL('image/png');
+        window.currentState.cells[index].localUrl = canvas.toDataURL('image/png');
+        
+        window.createImageGrid();
+        window.updateSpritesheetPreview();
+      });
+      
+      const colorPreview = document.createElement('div');
+      colorPreview.className = 'color-preview-box';
+      colorPreview.style.backgroundColor = cell.backgroundColor || '#000000';
+      
+      // Update color preview when input changes
+      colorInput.addEventListener('input', (e) => {
+        colorPreview.style.backgroundColor = e.target.value;
+      });
+      
+      colorContent.appendChild(colorInstructions);
+      colorContent.appendChild(colorInput);
+      colorContent.appendChild(colorPreview);
+      
+      // Set up tab button event listeners
+      [promptTabButton, uploadTabButton, colorTabButton].forEach(button => {
+        button.addEventListener('click', () => {
+          // Deactivate all buttons and content
+          [promptTabButton, uploadTabButton, colorTabButton].forEach(b => b.classList.remove('active'));
+          [promptContent, uploadContent, colorContent].forEach(c => c.classList.remove('active'));
+          
+          // Activate clicked button and corresponding content
+          button.classList.add('active');
+          const sourceType = button.dataset.sourceType;
+          cellElement.querySelector(`.cell-source-content[data-source-type="${sourceType}"]`).classList.add('active');
+          
+          // Update cell source type
+          const index = parseInt(cellElement.dataset.index);
+          window.currentState.cells[index].sourceType = sourceType;
+          
+          // If switching to color and we have a backgroundColor but no image, generate one
+          if (sourceType === 'color' && window.currentState.cells[index].backgroundColor && 
+              (!window.currentState.cells[index].imageUrl || window.currentState.cells[index].imageUrl === null)) {
+            const canvas = document.createElement('canvas');
+            canvas.width = window.currentState.cellWidth;
+            canvas.height = window.currentState.cellHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = window.currentState.cells[index].backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to data URL
+            window.currentState.cells[index].imageUrl = canvas.toDataURL('image/png');
+            window.currentState.cells[index].localUrl = canvas.toDataURL('image/png');
+            
+            window.createImageGrid();
+            window.updateSpritesheetPreview();
+          }
+        });
+      });
+      
+      // Add all elements to cell
       cellElement.appendChild(label);
       if (hasRowOverride || hasColOverride) {
         cellElement.appendChild(promptTags);
       }
-      cellElement.appendChild(textarea);
-      cellElement.appendChild(promptPreview);
-      cellElement.appendChild(promptToggle);
-      cellElement.appendChild(generateBtn);
+      cellElement.appendChild(sourceSelector);
+      cellElement.appendChild(promptContent);
+      cellElement.appendChild(uploadContent);
+      cellElement.appendChild(colorContent);
       
       // Add hover effect to highlight corresponding cells
       cellElement.addEventListener('mouseenter', () => highlightCells(row, col));
