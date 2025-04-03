@@ -18,5 +18,28 @@ const contentPresets = {
     "lamp", "mirror", "clock", "rug",
     "curtain", "pillow", "ottoman", "nightstand"
   ],
-  // ... existing code ...
+  gems: [
+    "ruby", "emerald", "diamond", "sapphire",
+    "amethyst", "topaz", "opal", "jade",
+    "pearl", "garnet", "amber", "quartz",
+    "onyx", "aquamarine", "turquoise", "citrine"
+  ],
+  collectibles: [
+    "coin", "star", "heart", "key",
+    "crystal", "potion", "mushroom", "flower",
+    "shield", "1up", "energy orb", "gem shard",
+    "crown", "medallion", "treasure chest", "power crystal"
+  ],
+  foods: [
+    "pizza", "hamburger", "ice cream", "cake",
+    "apple", "donut", "sushi", "taco",
+    "bread", "chicken", "cookie", "banana",
+    "chocolate", "carrot", "watermelon", "pasta"
+  ],
+  weapons: [
+    "sword", "bow and arrow", "shield", "axe",
+    "dagger", "staff", "spear", "hammer",
+    "crossbow", "whip", "katana", "mace",
+    "shuriken", "nunchucks", "flail", "boomerang"
+  ],
 };

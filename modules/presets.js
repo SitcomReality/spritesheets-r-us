@@ -89,11 +89,16 @@ function populateGridWithPreset(presetName) {
   
   const items = contentPresets[presetName];
   const cellCount = window.currentState.rows * window.currentState.columns;
+  const replaceEmptyOnly = document.getElementById('replaceEmptyOnly').checked;
   
   // Reset prompts if needed
-  if (confirm(`Replace all current cell prompts with ${presetName}?`)) {
+  if (confirm(`Replace ${replaceEmptyOnly ? 'empty' : 'all'} cell prompts with ${presetName}?`)) {
     for (let i = 0; i < cellCount; i++) {
       const itemIndex = i % items.length;
+      // Skip cells with content if replaceEmptyOnly is checked
+      if (replaceEmptyOnly && window.currentState.cells[i].prompt.trim() !== '') {
+        continue;
+      }
       window.currentState.cells[i].prompt = items[itemIndex];
     }
     
